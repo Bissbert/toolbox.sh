@@ -1,0 +1,40 @@
+#!/bin/sh
+# Example subcommand
+set -eu
+
+# Load libs
+_this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
+
+usage() {
+  cat <<EOF
+Usage: ${TOOLBOX_NAME} hello [--loud] [NAME]
+
+Say hello. If NAME is omitted, uses current user.
+
+Options:
+  -h, --help   Show help
+  --loud       Shout in uppercase
+EOF
+}
+
+LOUD=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --loud) LOUD=1; shift ;;
+    --) shift; break ;;
+    -*) err "unknown option: %s" "$1"; usage >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+
+name=${1:-${USER:-world}}
+
+ensure_dirs
+dbg "config dir: %s" "$TOOLBOX_CONFIG_DIR"
+
+msg="Hello, $name!"
+if [ "$LOUD" = 1 ]; then msg=$(printf '%s' "$msg" | tr '[:lower:]' '[:upper:]'); fi
+inf "%s" "$msg"
+

@@ -1,0 +1,89 @@
+#!/bin/sh
+# Self-update pattern: update framework files from a path or git URL
+set -eu
+
+_this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
+
+usage() {
+  cat <<EOF
+Usage: ${TOOLBOX_NAME} self-update [--from-path DIR] [--from-git URL] [--ref REF] [--dry-run]
+
+Updates core files (bin, lib, tools, share, VERSION, README.md).
+With --dry-run, only prints what would change.
+EOF
+}
+
+FROM_PATH=""; FROM_GIT=""; REF=""; DRY=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --from-path) req_arg "$@"; FROM_PATH=$2; shift 2 ;;
+    --from-git) req_arg "$@"; FROM_GIT=$2; shift 2 ;;
+    --ref) req_arg "$@"; REF=$2; shift 2 ;;
+    --dry-run) DRY=1; shift ;;
+    --) shift; break ;;
+    -*) err "unknown option: %s" "$1"; usage >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+
+tmpdir=${TMPDIR:-/tmp}/${TOOLBOX_NAME}.update.$$.$RANDOM
+cleanup() { rm -rf "$tmpdir" 2>/dev/null || :; }
+trap cleanup EXIT INT HUP TERM
+
+mkdir -p "$tmpdir"
+
+srcdir=""
+if [ -n "$FROM_PATH" ]; then
+  [ -d "$FROM_PATH" ] || { err "not a directory: %s" "$FROM_PATH"; exit 2; }
+  srcdir=$FROM_PATH
+elif [ -n "$FROM_GIT" ]; then
+  if command_exists git; then
+    inf "cloning %s" "$FROM_GIT"
+    git clone --depth 1 ${REF:+-b "$REF"} "$FROM_GIT" "$tmpdir/src" >/dev/null 2>&1 || {
+      err "git clone failed"; exit 1; }
+    srcdir="$tmpdir/src"
+  else
+    err "git not available; try --from-path"
+    exit 2
+  fi
+else
+  # If inside a git worktree, try pulling
+  if command_exists git && git -C "$_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    inf "pulling latest in %s" "$_root"
+    if [ "$DRY" = 1 ]; then
+      inf "dry-run: would run 'git -C %s pull --ff-only'" "$_root"
+      exit 0
+    fi
+    git -C "$_root" pull --ff-only || { err "git pull failed"; exit 1; }
+    exit 0
+  fi
+  err "no source specified; use --from-path or --from-git"
+  exit 2
+fi
+
+update_list='bin lib tools share VERSION README.md'
+
+for item in $update_list; do
+  [ -e "$srcdir/$item" ] || continue
+  if [ "$DRY" = 1 ]; then
+    inf "would update %s" "$item"
+  else
+    inf "updating %s" "$item"
+    # Prefer rsync if available for clean sync
+    if command_exists rsync; then
+      rsync -a --delete "$srcdir/$item" "$_root/" >/dev/null 2>&1 || { err "rsync failed for %s" "$item"; exit 1; }
+    else
+      # Fallback to cp -r (no delete)
+      cp -r "$srcdir/$item" "$_root/" >/dev/null 2>&1 || { err "copy failed for %s" "$item"; exit 1; }
+    fi
+  fi
+done
+
+if [ "$DRY" = 1 ]; then
+  inf "dry-run complete"
+else
+  inf "self-update complete"
+fi
+

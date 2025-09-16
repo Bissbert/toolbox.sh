@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")"/.. && pwd -P)
+
+status=0
+for t in "$ROOT"/tests/*.t; do
+  printf '=== %s ===\n' "${t##*/}"
+  sh "$t" || status=$?
+done
+
+exit $status
+

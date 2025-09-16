@@ -1,0 +1,29 @@
+#!/bin/sh
+# Template subcommand for toolbox.sh
+set -eu
+_this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
+
+usage() {
+  cat <<EOF
+Usage: ${TOOLBOX_NAME} <subcmd> [options]
+
+Short description.
+
+Options:
+  -h, --help  Show help
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*) err "unknown option: %s" "$1"; usage >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+
+ensure_dirs
+inf "subcommand ran with %s args" "$#"
+

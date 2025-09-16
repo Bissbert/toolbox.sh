@@ -1,0 +1,36 @@
+#!/bin/sh
+# Scaffold a new subcommand from template
+set -eu
+
+_this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
+
+usage() {
+  cat <<EOF
+Usage: ${TOOLBOX_NAME} new <name>
+
+Create a new subcommand in tools/<name> from the template.
+EOF
+}
+
+[ "$#" -ge 1 ] || { usage >&2; exit 2; }
+case ${1:-} in -h|--help) usage; exit 0;; esac
+name=$1
+
+t_src="$_root/share/templates/subcommand"
+t_dst="$_root/tools/$name"
+
+[ -e "$t_dst" ] && { err "already exists: %s" "$t_dst"; exit 2; }
+
+cp "$t_src" "$t_dst"
+
+# Replace placeholder within file if present
+tmp=$(mktemp 2>/dev/null || echo "/tmp/${TOOLBOX_NAME}.$$.$RANDOM")
+sed "s/<subcmd>/$name/g" "$t_dst" >"$tmp" && mv "$tmp" "$t_dst"
+
+# Try to make it executable (ignore failures in restricted envs)
+chmod +x "$t_dst" 2>/dev/null || :
+
+inf "created tools/%s" "$name"
+inf "run: %s %s --help" "$TOOLBOX_NAME" "$name"
+
