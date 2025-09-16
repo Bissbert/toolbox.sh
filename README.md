@@ -11,7 +11,7 @@ Quick Start
 - Run `bin/toolbox help` to see commands.
 - Add a new subcommand: copy `tools/hello` and edit.
 - Generate shell completions: `bin/toolbox completion bash > /etc/bash_completion.d/toolbox` (or zsh)
-- Run tests: `sh test/run` (pure sh)
+- Run tests: `sh tests/run` (pure sh)
 
 Layout
 
@@ -30,7 +30,7 @@ Conventions
 
 Version
 
-- Set in `bin/toolbox` as `TOOLBOX_VERSION`
+- The default version is read from the `VERSION` file. You can override at runtime by exporting `TOOLBOX_VERSION`.
 
 Completions
 

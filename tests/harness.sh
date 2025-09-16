@@ -46,3 +46,4 @@ run_cmd() {
 finish() {
   if [ "$_failed" -gt 0 ]; then exit 1; fi
 }
+

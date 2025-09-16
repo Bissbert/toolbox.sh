@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-. "$(dirname "$0")/../test/harness.sh"
+. "$(dirname "$0")/harness.sh"
 
 plan 5
 
@@ -13,4 +13,3 @@ assert_match '^hello$' "$C_output" "__commands includes hello"
 assert_match '^new$' "$C_output" "__commands includes new"
 
 finish
-

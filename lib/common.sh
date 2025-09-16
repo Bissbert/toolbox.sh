@@ -6,8 +6,6 @@ is_tty() { [ -t 1 ]; }
 
 die() { printf '%s\n' "$*" >&2; exit 1; }
 
-req_arg() { [ "$#" -ge 2 ] || die "missing argument for $1"; }
-
 command_exists() { command -v -- "$1" >/dev/null 2>&1; }
 
 resolve_command() {
@@ -30,4 +28,3 @@ run() {
   printf '+ %s\n' "$*" >&2
   "$@"
 }
-

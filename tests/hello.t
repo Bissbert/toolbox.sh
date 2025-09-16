@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-. "$(dirname "$0")/../test/harness.sh"
+. "$(dirname "$0")/harness.sh"
 
 plan 4
 
@@ -13,4 +13,3 @@ assert_match '^toolbox: HELLO, TEST!$' "$L_output" "hello loud"
 assert_eq 0 "$L_status" "hello loud status"
 
 finish
-
