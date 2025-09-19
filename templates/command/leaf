@@ -1,5 +1,5 @@
 #!/bin/sh
-# Example subcommand
+# Generated subcommand stub
 set -eu
 
 _this="$0"
@@ -16,21 +16,18 @@ _dir=${_this%/*}
 _root=${_dir%/tools}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"; . "$_root/lib/cmd.sh"
 
-CMD_NAME=${CMD_NAME:-"hello"}
-CMD_SUMMARY="Print a friendly greeting"
-CMD_USAGE="${TOOLBOX_NAME} ${CMD_NAME} [NAME] [--loud]"
-CMD_DESCRIPTION="If NAME is omitted the current user (or 'world') is used."
-CMD_OPTIONS=$(cat <<'__HELLO_OPTS__'
---loud||Shout the greeting in uppercase
-__HELLO_OPTS__
+CMD_NAME="__CMD_NAME__"
+CMD_SUMMARY="Describe what __CMD_NAME__ does"
+CMD_USAGE="${TOOLBOX_NAME} __CMD_USAGE_PATH__ [options]"
+CMD_DESCRIPTION="Explain the behaviour of __CMD_NAME__ here."
+CMD_OPTIONS=$(cat <<'__CMD_OPTIONS__'
+# --flag|VALUE|Describe the flag
+__CMD_OPTIONS__
 )
-CMD_EXAMPLES=$(cat <<'__HELLO_EXAMPLES__'
-${TOOLBOX_NAME} hello
-${TOOLBOX_NAME} hello Alice --loud
-__HELLO_EXAMPLES__
+CMD_EXAMPLES=$(cat <<'__CMD_EXAMPLES__'
+${TOOLBOX_NAME} __CMD_USAGE_PATH__
+__CMD_EXAMPLES__
 )
-
-LOUD=0
 
 while [ "$#" -gt 0 ]; do
   if cmd_maybe_handle_flag "$1"; then
@@ -38,18 +35,10 @@ while [ "$#" -gt 0 ]; do
     continue
   fi
   case "$1" in
-    --loud) LOUD=1; shift ;;
     --) shift; break ;;
     -*) err "unknown option: %s" "$1"; cmd_show_help ;;
     *) break ;;
   esac
 done
 
-name=${1:-${USER:-world}}
-
-ensure_dirs
-dbg "config dir: %s" "$TOOLBOX_CONFIG_DIR"
-
-msg="Hello, $name!"
-if [ "$LOUD" = 1 ]; then msg=$(printf '%s' "$msg" | tr '[:lower:]' '[:upper:]'); fi
-inf "%s" "$msg"
+inf "__CMD_NAME__ is not implemented yet"

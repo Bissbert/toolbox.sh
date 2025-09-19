@@ -1,0 +1,206 @@
+#!/bin/sh
+# Generate a new CLI project from the Toolbox.sh skeleton and a JSON manifest
+set -eu
+
+_this="$0"
+case "$_this" in
+  /*) : ;;
+  *) _this=$(command -v -- "$_this" 2>/dev/null || printf %s "$_this")
+     case "$_this" in
+       /*) : ;;
+       */*) _this=$(CDPATH= cd -- "${_this%/*}" && pwd -P)/${_this##*/} ;;
+       *) _this=$(CDPATH= cd -- . && pwd -P)/$_this ;;
+     esac ;;
+esac
+_dir=${_this%/*}
+_root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
+
+usage() {
+  cat <<'__GEN_HELP__'
+Usage: ${TOOLBOX_NAME} generate --name NAME --manifest FILE [--dest DIR] [--force]
+
+Create a fresh project skeleton using templates/project. The manifest must be a
+JSON array describing commands, where each entry is either a string (leaf
+command) or an object with "name" and nested "commands".
+
+Example manifest:
+[
+  "status",
+  { "name": "release", "commands": ["plan", "publish"] }
+]
+__GEN_HELP__
+}
+
+NAME=""
+MANIFEST=""
+DEST=""
+FORCE=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --name) req_arg "$@"; NAME=$2; shift 2 ;;
+    --manifest) req_arg "$@"; MANIFEST=$2; shift 2 ;;
+    --dest) req_arg "$@"; DEST=$2; shift 2 ;;
+    --force) FORCE=1; shift ;;
+    --) shift; break ;;
+    -*) err "unknown option: %s" "$1"; usage >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+
+[ -n "$NAME" ] || { err "--name is required"; exit 2; }
+[ -n "$MANIFEST" ] || { err "--manifest is required"; exit 2; }
+[ -f "$MANIFEST" ] || { err "manifest not found: %s" "$MANIFEST"; exit 2; }
+command_exists python3 || { err "python3 is required for generation"; exit 1; }
+
+case "$NAME" in
+  *[!A-Za-z0-9_-]* )
+    err "project name must contain only letters, numbers, hyphen, or underscore"
+    exit 2
+    ;;
+  "") err "project name must not be empty"; exit 2 ;;
+  *) : ;;
+esac
+
+if [ -z "$DEST" ]; then
+  DEST=$NAME
+fi
+case "$DEST" in
+  /*) : ;;
+  *) DEST=$PWD/$DEST ;;
+esac
+DEST=$(
+  python3 - "$DEST" <<'__ABS__'
+import pathlib, sys
+print(pathlib.Path(sys.argv[1]).resolve())
+__ABS__
+)
+
+[ "$DEST" != "/" ] || { err "refusing to operate on root directory"; exit 2; }
+
+if [ -e "$DEST" ]; then
+  if [ "$FORCE" -ne 1 ]; then
+    err "destination exists: %s (use --force to overwrite)" "$DEST"
+    exit 2
+  fi
+  rm -rf "$DEST"
+fi
+mkdir -p "$DEST"
+
+PROJECT_TEMPLATE_DIR=${PROJECT_TEMPLATE_DIR:-"$TEMPLATE_DIR/project"}
+[ -d "$PROJECT_TEMPLATE_DIR" ] || { err "project template not found: %s" "$PROJECT_TEMPLATE_DIR"; exit 1; }
+
+inf "Copying skeleton into %s" "$DEST"
+cp -R "$PROJECT_TEMPLATE_DIR/." "$DEST/"
+
+# Remove sample command/tests; manifest will define the actual ones
+rm -f "$DEST/tools/hello" "$DEST/tests/hello.t" 2>/dev/null || :
+
+# Rename dispatcher binary
+if [ -f "$DEST/bin/toolbox" ]; then
+  mv "$DEST/bin/toolbox" "$DEST/bin/$NAME"
+fi
+
+# Copy command templates into the new project (shared source of truth)
+mkdir -p "$DEST/templates"
+cp -R "$TEMPLATE_DIR/command" "$DEST/templates/"
+
+python3 - "$DEST" "$NAME" <<'__PATCH__'
+import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+name = sys.argv[2]
+replacements = {
+    root / 'bin' / name: [('TOOLBOX_NAME=${TOOLBOX_NAME:-toolbox}', 'TOOLBOX_NAME=${TOOLBOX_NAME:-' + name + '}')],
+    root / 'lib' / 'common.sh': [('PROG=${TOOLBOX_NAME:-toolbox}', 'PROG=${TOOLBOX_NAME:-' + name + '}')],
+    root / 'Makefile': [('PROG ?= toolbox', 'PROG ?= ' + name)],
+    root / 'README.md': [('Toolbox.sh', name + '.sh')],
+    root / 'AGENTS.md': [('Toolbox.sh', name + '.sh')]
+}
+for path, rules in replacements.items():
+    if not path.exists():
+        continue
+    text = path.read_text()
+    for old, new in rules:
+        text = text.replace(old, new)
+    path.write_text(text)
+__PATCH__
+
+# Ensure root gitignore exists
+if [ -f "$DEST/templates/command/gitignore" ]; then
+  cp "$DEST/templates/command/gitignore" "$DEST/.gitignore"
+fi
+
+_tmpdir=$(mktemp -d)
+trap 'rm -rf "$_tmpdir"' EXIT INT HUP TERM
+
+python3 - "$MANIFEST" "$_tmpdir/leaves" "$_tmpdir/groups" <<'__MANIFEST__'
+import json, sys
+from pathlib import Path
+manifest_path, leaves_path, groups_path = sys.argv[1:4]
+data = json.load(open(manifest_path))
+leaves = []
+groups = []
+
+def ensure_list(value):
+    if isinstance(value, list):
+        return value
+    raise TypeError('commands must be a list')
+
+def walk(node, prefix):
+    if isinstance(node, str):
+        if not node:
+            raise ValueError('command names must be non-empty strings')
+        leaves.append(prefix + [node])
+    elif isinstance(node, dict):
+        name = node.get('name')
+        if not isinstance(name, str) or not name:
+            raise ValueError('objects must contain a non-empty "name" field')
+        path = prefix + [name]
+        groups.append(path)
+        children = ensure_list(node.get('commands', []))
+        for child in children:
+            walk(child, path)
+    else:
+        raise TypeError('manifest entries must be strings or objects')
+
+if isinstance(data, list):
+    for entry in data:
+        walk(entry, [])
+else:
+    raise TypeError('manifest root must be a list')
+
+with open(leaves_path, 'w') as lf:
+    for path in leaves:
+        lf.write(' '.join(path) + '\n')
+
+with open(groups_path, 'w') as gf:
+    for path in sorted(groups, key=lambda p: len(p), reverse=True):
+        gf.write(' '.join(path) + '\n')
+__MANIFEST__
+
+TOOLS_DIR_DEST="$DEST/tools"
+TEMPLATE_DIR_DEST="$DEST/templates"
+
+create_leaf() {
+  cmd_path=$1
+  ( TOOLS_DIR="$TOOLS_DIR_DEST" TEMPLATE_DIR="$TEMPLATE_DIR_DEST" TOOLBOX_NAME="$NAME" sh "$DEST/tools/new" $cmd_path )
+}
+
+create_group() {
+  cmd_path=$1
+  ( TOOLS_DIR="$TOOLS_DIR_DEST" TEMPLATE_DIR="$TEMPLATE_DIR_DEST" TOOLBOX_NAME="$NAME" sh "$DEST/tools/new" --group $cmd_path )
+}
+
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  create_leaf "$line"
+done < "$_tmpdir/leaves"
+
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  create_group "$line"
+done < "$_tmpdir/groups"
+
+inf "Project '%s' generated at %s" "$NAME" "$DEST"

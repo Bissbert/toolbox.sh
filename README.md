@@ -1,79 +1,82 @@
-Toolbox.sh — Minimal Shell Toolsuite Framework
+# Toolbox.sh — POSIX CLI Toolkit & Generator
 
-Overview
+Toolbox.sh is a batteries-included framework for building Git-style command suites in pure POSIX shell. It combines a flexible dispatcher, reusable libraries, metadata-driven help output, and a JSON-powered project generator so you can spin up fully tested CLIs without leaving `/bin/sh`.
 
-- Portable, POSIX sh toolsuite skeleton.
-- Dispatcher + subcommands + tiny stdlib.
-- No external deps beyond a POSIX shell and coreutils.
+## Highlights
+- **Portable by default** – every script targets `sh`, avoiding bashisms and external dependencies.
+- **Structured subcommands** – directories map to namespaces, with `__main` entry points for groups.
+- **Metadata-aware UX** – populate `CMD_*` fields once and gain uniform `--help` output plus Bash/Zsh completion.
+- **Generator included** – feed a manifest to `bin/toolbox generate` and get a ready-to-run project with tests and templates.
 
-Quick Start
+## Prerequisites
+- POSIX shell and coreutils (standard on Linux/macOS).
+- `python3` for manifest parsing and templating.
+- Optional: `git` for `tools/self-update --from-git`.
 
-- Run `bin/toolbox help` to see commands.
-- Add a new subcommand: copy `tools/hello` and edit.
-- Generate shell completions: `bin/toolbox completion bash > /etc/bash_completion.d/toolbox` (or zsh)
-- Run tests: `sh tests/run` or `make test` (pure sh)
-- Install for current user: `make install-user` (installs under `~/.local/opt/toolbox` and symlinks into `~/.local/bin`)
-- System install (requires sudo): `sudo make install`
+## Quick Start
+```sh
+# Inspect built-in commands
+bin/toolbox help
 
-Layout
+# Describe your command tree
+cat >manifest.json <<'JSON'
+[
+  "status",
+  { "name": "release", "commands": [
+    "plan",
+    { "name": "deploy", "commands": ["canary", "prod"] }
+  ] }
+]
+JSON
 
-- `bin/toolbox` — main dispatcher (rename to brand your suite)
-- `lib/*.sh` — helpers: common, log, args, config
-- `tools/*` — subcommands (executable files)
-- `tests/*.t` — test files run by `tests/run`
-- `tests/harness.sh` — minimal TAP-like harness used by tests
-- `share/templates/subcommand` — starter template
+# Generate a project in ./demo
+bin/toolbox generate --name demo --manifest manifest.json --dest ./demo
 
-Conventions
+# Add logic, then run the tests
+cd demo
+sh tests/run
+```
 
-- Shebang `#!/bin/sh`
-- One command per file in `tools/`
-- Each tool supports `--help`
-- Respect XDG base dirs; default to `$HOME` fallbacks
+## Command Overview
+| Command | Purpose |
+| --- | --- |
+| `hello` | Example leaf command wiring `lib/cmd.sh` metadata. |
+| `new` | Scaffold a leaf or group command (`tools/new analytics cohort`). |
+| `generate` | Create a full project from a JSON manifest. |
+| `completion` | Emit dynamic Bash/Zsh completion informed by command metadata. |
+| `self-update` | Sync the framework from a local path or git remote. |
 
-Version
+## Project Layout
+```
+bin/toolbox          # Dispatcher / entry point
+lib/                 # Shared helpers (common.sh, log.sh, args.sh, config.sh, cmd.sh)
+templates/command/   # Leaf/group stubs used by `tools/new` and the generator
+templates/project/   # Skeleton copied into new projects (docs, tests, tooling)
+tools/               # Built-in commands
+tests/               # TAP-style test suite (`tests/run` harness)
+docs/                # External-ready documentation (guide + gist)
+```
 
-- The default version is read from the `VERSION` file. You can override at runtime by exporting `TOOLBOX_VERSION`.
+## Development Workflow
+1. Make changes and keep metadata current in each command (`CMD_SUMMARY`, `CMD_OPTIONS`, etc.).
+2. Run `sh tests/run` (or `make test`) to exercise CLI behaviour and generator scenarios.
+3. Regenerate completions when option sets change: `bin/toolbox completion bash > completions/toolbox.bash`.
+4. Document changes in `docs/` and `AGENTS.md` so downstream projects stay aligned.
 
-Completions
+## Installing Locally
+- `make install-user` → installs under `~/.local/opt/toolbox` and symlinks into `~/.local/bin`.
+- `sudo make install` → installs under `/opt/toolbox` with a `/usr/local/bin/toolbox` shim.
+- `make completions` → writes Bash/Zsh completion scripts to `./completions/`.
 
-- `tools/completion` prints a dynamic completion script for `bash` or `zsh`.
-- Bash uses a function that calls `${TOOLBOX_NAME} __commands` to list subs.
-- Install example: `toolbox completion bash | sudo tee /etc/bash_completion.d/toolbox`.
-- You can also generate ready-made files via `make completions` (writes to `./completions/`).
+## Documentation
+- [docs/GENERATOR_GUIDE.md](docs/GENERATOR_GUIDE.md) — copy-ready README describing the generator workflow.
+- [docs/GENERATOR_GIST.md](docs/GENERATOR_GIST.md) — condensed quickstart for sharing as a gist or snippet.
+- [AGENTS.md](AGENTS.md) — contributor playbook covering style, testing, and PR expectations.
 
-Tests
+## Troubleshooting
+- **Missing python3** → install via your package manager (`apt install python3`, `brew install python`).
+- **Manifest validation errors** → confirm the JSON array structure and ensure every group has a `commands` array.
+- **Permission issues** → prefer `make install-user` or run privileged commands with care.
 
-- `tests/harness.sh` is a minimal TAP-like runner in pure sh.
-- `tests/*.t` import the harness, run commands, assert output & status.
-- Tests isolate XDG dirs under `./.tmp-tests` to avoid system writes.
-- Run all tests with `sh tests/run` or `make test`.
-
-Makefile
-
-- Common targets:
-  - `test` — run the test suite
-  - `install` — install to `/opt/toolbox` and symlink to `/usr/local/bin/toolbox`
-  - `install-user` — install to `~/.local/opt/toolbox` and symlink to `~/.local/bin/toolbox`
-  - `uninstall`, `uninstall-user` — remove installs and symlinks
-  - `completions` — generate Bash and Zsh completion files under `./completions/`
-  - `print-prefix` — show resolved install prefixes
-
-Current State
-
-- Minimal, working toolsuite skeleton with the following built-in commands:
-  - `hello` — example command
-  - `new` — scaffold a new subcommand from a template
-  - `completion` — emit dynamic Bash/Zsh completion
-  - `self-update` — update core files from a path or git
-- Test layout consolidated under `tests/`; all tests currently pass.
-- No external runtime deps beyond a POSIX shell and coreutils.
-
-Self-Update
-
-- `tools/self-update` supports:
-  - `--from-path DIR` to sync from a local source checkout
-  - `--from-git URL [--ref REF]` to fetch via git clone (if available)
-  - If inside a git repo, runs a `git pull --ff-only` by default
-  - `--dry-run` prints actions only
-- Files updated: `bin`, `lib`, `tools`, `share`, `VERSION`, `README.md`.
+## Contributing
+Follow the guidelines in `AGENTS.md`: keep commits focused, ensure tests pass, update docs/templates when behaviour changes, and include reproduction commands in PR descriptions.

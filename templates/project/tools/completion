@@ -2,18 +2,7 @@
 # Output shell completion scripts (bash, zsh)
 set -eu
 
-_this="$0"
-case "$_this" in
-  /*) : ;;
-  *) _this=$(command -v -- "$_this" 2>/dev/null || printf %s "$_this")
-     case "$_this" in
-       /*) : ;;
-       */*) _this=$(CDPATH= cd -- "${_this%/*}" && pwd -P)/${_this##*/} ;;
-       *) _this=$(CDPATH= cd -- . && pwd -P)/$_this ;;
-     esac ;;
-esac
-_dir=${_this%/*}
-_root=${_dir%/tools}
+_this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {

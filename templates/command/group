@@ -1,0 +1,42 @@
+#!/bin/sh
+# Generated command group stub
+set -eu
+
+_this="$0"
+case "$_this" in
+  /*) : ;;
+  *) _this=$(command -v -- "$_this" 2>/dev/null || printf %s "$_this")
+     case "$_this" in
+       /*) : ;;
+       */*) _this=$(CDPATH= cd -- "${_this%/*}" && pwd -P)/${_this##*/} ;;
+       *) _this=$(CDPATH= cd -- . && pwd -P)/$_this ;;
+     esac ;;
+esac
+_dir=${_this%/*}
+_root=${_dir%/tools}
+. "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"; . "$_root/lib/cmd.sh"
+
+CMD_NAME="__CMD_NAME__"
+CMD_SUMMARY="Top-level command for __CMD_NAME__ operations"
+CMD_USAGE="${TOOLBOX_NAME} __CMD_USAGE_PATH__ <subcommand> [options]"
+CMD_DESCRIPTION="Select one of the available subcommands to continue."
+CMD_SUBCOMMANDS=$(cat <<'__CMD_SUBS__'
+__CMD_SUBCOMMANDS__
+__CMD_SUBS__
+)
+CMD_EXAMPLES=$(cat <<'__CMD_EXAMPLES__'
+${TOOLBOX_NAME} __CMD_USAGE_PATH__ __FIRST_CHILD__
+__CMD_EXAMPLES__
+)
+
+if [ "$#" -gt 0 ]; then
+  if cmd_maybe_handle_flag "$1"; then
+    shift
+  else
+    err "unknown subcommand: %s" "$1"
+    note "run '%s help %s' for usage" "$TOOLBOX_NAME" "$CMD_NAME"
+    exit 2
+  fi
+fi
+
+cmd_show_help

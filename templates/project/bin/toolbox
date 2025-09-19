@@ -43,7 +43,7 @@ _usage_commands() {
 }
 
 usage() {
-  cat <<__TOOLBOX_HELP__
+  cat <<'__TOOLBOX_HELP__'
 ${TOOLBOX_NAME} ${TOOLBOX_VERSION}
 
 Usage: ${TOOLBOX_NAME} [global-options] <command> [args]
