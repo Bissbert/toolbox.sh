@@ -1,2 +1,13 @@
+# Build artifacts
 dist/
 .tmp-tests/
+completions/
+
+# Editor junk
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python cache (in case helper scripts grow)
+__pycache__/
