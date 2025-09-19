@@ -2,6 +2,7 @@
 dist/
 .tmp-tests/
 completions/
+AGENTS.md
 
 # Editor junk
 *.swp
