@@ -29,6 +29,10 @@
 - Define the review process (required approvers, timelines, labels).
 - State merging rules (fast-forward only, squash, rebase).
 
+## Packaging Options
+- Track which distribution channels are in scope (tarball, Homebrew, Docker, OS packages).
+- Assign ownership for maintaining each channel and keeping docs current.
+
 ## Operations & Releases
 - Detail how releases are cut (tagging, packaging, distribution channels).
 - Note monitoring/alerting steps if the CLI affects production systems.

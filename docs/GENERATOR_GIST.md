@@ -51,3 +51,9 @@ Fill these in as you add behaviour so `--help` and completion scripts stay corre
 - `make test` — optional convenience wrapper around `sh tests/run`.
 
 Need more detail? Drop `docs/GENERATOR_GUIDE.md` into your repo as the README.
+
+### Shipping Ideas
+- Publish tagged tarballs (`make dist`) so teammates can `curl -L ... | tar` and run `make install-user`.
+- Add a Homebrew/Linuxbrew formula once you cut your first release.
+- Consider a small OCI image (`docker run ... toolbox generate`) for CI-only environments.
+- If you need apt support, `make deb` produces `toolbox_<version>_all.deb` ready for your repo.

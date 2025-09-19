@@ -41,5 +41,10 @@ Create a table summarising your commands. Example:
 - Note the preferred support channel (issues, Slack, email).
 - Add release cadence or maintenance status if relevant.
 
+## Distribution & Packaging
+- Decide how to ship releases (tarballs via `make dist`, Debian package via `make deb`, additional channels like Homebrew or container images).
+- Document installation commands for each supported channel.
+- Record release cadence and signing/checksum policies.
+
 ## License
 State the license covering this project (e.g., MIT, Apache-2.0). Replace this section as needed.

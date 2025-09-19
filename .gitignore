@@ -1,22 +1,2 @@
-# Toolbox.sh project .gitignore template
-
-# Generated artifacts
-completions/
+dist/
 .tmp-tests/
-
-# Local configs (if created alongside project)
-config
-config.sh
-
-# OS/editor files
-.DS_Store
-*.swp
-*.swo
-*~
-.zcompdump*
-.idea/
-.vscode/
-
-# Logs
-*.log
-

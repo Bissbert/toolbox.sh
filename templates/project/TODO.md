@@ -9,4 +9,5 @@ Use this checklist to finish bootstrapping the generated project. Trim or expand
 - [ ] Configure CI to execute `sh tests/run` (and additional suites if required).
 - [ ] Decide on installation/distribution strategy and document it in the README.
 - [ ] Complete `docs/` with any domain-specific guides or API references.
+- [ ] Decide on supported distribution channels (tarball via `make dist`, Debian via `make deb`, plus Homebrew/container as needed) and document install steps.
 - [ ] Set the project license and update this checklist as tasks are completed.

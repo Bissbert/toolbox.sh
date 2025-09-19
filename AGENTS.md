@@ -36,6 +36,16 @@ Toolbox.sh exists to make it trivial to ship portable, metadata-rich command-lin
 - Link issues/epics when applicable; note UX-facing updates in the PR summary.
 - Do not reformat unrelated files—keep diffs scoped.
 
+## Packaging & Distribution Ideas
+- **Tarball releases:** `make dist` generates `dist/toolbox-<version>.tar.gz`; sign and publish alongside release notes.
+- **Debian package:** `make deb` calls `packaging/deb/build.sh` to produce `dist/toolbox_<version>_all.deb`; push to internal apt repositories.
+- **Homebrew tap:** Future work—formula pointing at the tarball; validate with `brew test`.
+- **Self-extracting installer:** Future work—POSIX shell wrapper installing into `~/.local/opt`.
+- **OCI image:** Future work—minimal image exposing `toolbox generate` for CI/CD.
+- **Other OS packages:** Explore RPM/Nix once tarball layout stabilises.
+
+Assign owners in issues before starting work and capture learnings in the docs.
+
 ## Release Checklist
 1. Ensure README + docs match the new behaviour.
 2. Update `VERSION` and any changelog (if maintained externally).

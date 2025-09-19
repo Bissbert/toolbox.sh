@@ -79,6 +79,14 @@ Keeping metadata accurate ensures `bin/<name> completion` produces correct Bash/
 - **Help output missing options:** populate `CMD_OPTIONS` and rerun `--help` to verify.
 - **Completion script stale:** rerun `bin/<name> completion bash|zsh` after changing metadata.
 
+## Shipping & Packaging Ideas
+- Tag releases and publish signed tarballs (use `make dist`) so consumers can run `make install-user` without cloning.
+- Build Debian packages with `make deb` and push them to your apt repository for managed installs.
+- Provide a Homebrew tap or Linuxbrew formula that stages the tarball and links the dispatcher.
+- Offer a `curl | sh` installer that downloads the latest release and installs to `~/.local/opt`.
+- Build an OCI image (`ghcr.io/<org>/toolbox-generator`) for CI pipelines that only need `toolbox generate`.
+- Consider OS-native packages (Deb/RPM/Nix) if your team’s deployment targets rely on them.
+
 ## Next Steps for New Projects
 1. Replace placeholders in `README.md`, `AGENTS.md`, and `TODO.md` with project-specific content.
 2. Review command stubs and implement real behaviour.

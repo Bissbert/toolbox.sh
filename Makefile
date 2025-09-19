@@ -1,5 +1,9 @@
 SHELL := /bin/sh
 
+VERSION := $(shell sed -n '1p' VERSION)
+DIST_DIR := dist
+DIST_TARBALL := $(DIST_DIR)/toolbox-$(VERSION).tar.gz
+
 # Name of the CLI (binary name). Avoid using NAME due to env collisions.
 PROG ?= toolbox
 
@@ -14,7 +18,7 @@ USER_BINDIR ?= $(HOME)/.local/bin
 # Honor DESTDIR for packaging
 DESTDIR ?=
 
-.PHONY: all test install install-user uninstall uninstall-user completions completion-bash completion-zsh print-prefix
+.PHONY: all test install install-user uninstall uninstall-user completions completion-bash completion-zsh print-prefix dist deb
 
 all:
 	@echo "Nothing to build. Try: 'make test' or 'make install'"
@@ -25,6 +29,17 @@ test:
 print-prefix:
 	@echo "System prefix: $(SYSTEM_PREFIX)"
 	@echo " User  prefix: $(USER_PREFIX)"
+
+dist: $(DIST_TARBALL)
+
+$(DIST_TARBALL):
+	@mkdir -p $(DIST_DIR)
+	@git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "git repository required for dist" >&2; exit 1; }
+	@git archive --format=tar --prefix=toolbox-$(VERSION)/ HEAD | gzip -n > $@
+	@echo "Built $@"
+
+deb: dist
+	@sh packaging/deb/build.sh
 
 # Internal helper: copy the project tree to a prefix
 define _copy_tree
