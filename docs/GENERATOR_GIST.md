@@ -1,59 +1,44 @@
-# toolbox.sh Generator Quickstart
+[← back to the overview](../README.md)
 
-Spin up a nested POSIX CLI in under a minute.
+# Generator gist
+
+```mermaid
+flowchart LR
+    M["manifest"] --> G["generate"]
+    G --> P["project tree"]
+    P --> C["edit command and CMD_* metadata"]
+    C --> T["run help and tests"]
+
+    style M fill:#9e6a03,stroke:#d29922,color:#fff
+    style G fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style T fill:#238636,stroke:#3fb950,color:#fff
+```
+
+The generator accepts a list of leaf names and command-group objects:
 
 ```sh
-# 1. Describe your command tree
 cat >manifest.json <<'JSON'
 [
   "status",
-  { "name": "release", "commands": [
-    "plan",
-    { "name": "deploy", "commands": ["canary", "prod"] }
-  ] }
+  {"name": "report", "commands": ["daily", "weekly"]}
 ]
 JSON
-
-# 2. Generate the project (dispatcher becomes ./demo/bin/demo)
-bin/toolbox generate --name demo --manifest manifest.json --dest ./demo
-
-# 3. Inspect and run the suite
-cd demo
-ls tools
-sh tests/run
+/bin/sh bin/toolbox generate --name depot --manifest manifest.json --dest ./depot
 ```
 
-### Manifest Cheatsheet
-- Root is a JSON array.
-- String → leaf command (`"status"`).
-- Object → command group `{ "name": "deploy", "commands": [...] }`.
-- Nest as deep as needed; directories + `__main` files appear automatically.
+The source contract is:
 
-### Metadata Reminders
-Each generated script includes placeholders for:
-- `CMD_USAGE`, `CMD_SUMMARY`, `CMD_DESCRIPTION`
-- `CMD_OPTIONS` (format: `--flag|VALUE|Description`)
-- `CMD_EXAMPLES`
-- `CMD_SUBCOMMANDS` (group `__main` only)
-Fill these in as you add behaviour so `--help` and completion scripts stay correct.
+| Manifest value | Generated path |
+|---|---|
+| `"status"` | `tools/status` |
+| group object | `tools/<group>/__main` |
+| child of a group | `tools/<group>/<child>` |
 
-### Layout Snapshot
-- `bin/<name>` — dispatcher that resolves nested commands.
-- `lib/` — helpers for logging, args, config, metadata.
-- `templates/command/` — stubs consumed by `bin/<name> new ...`.
-- `docs/` — copy of this quickstart + full guide; customise before publishing.
-- `tests/` — TAP harness (`tests/run`) and example specs; add one per command.
+After generation, edit the command file and replace its `CMD_*` placeholders.
+Use `--help` to inspect the metadata that the command exposes, then add a TAP
+test under `tests/`.
 
-### Common Follow-ups
-- `bin/<name> help` — inspect command tree & usage from metadata.
-- `bin/<name> new analytics cohort` — scaffold another nested command.
-- `bin/<name> completion bash` — regenerate completion script after tweaking metadata.
-- `make test` — optional convenience wrapper around `sh tests/run`.
-
-Need more detail? Drop `docs/GENERATOR_GUIDE.md` into your repo as the README.
-
-### Shipping Ideas
-- Publish tagged tarballs (`make dist`) so teammates can `curl -L ... | tar` and run `make install-user`.
-- Add a Homebrew/Linuxbrew formula once you cut your first release.
-- Consider a small OCI image (`docker run ... toolbox generate`) for CI-only environments.
-- If you need apt support, `make deb` produces `toolbox_<version>_all.deb` ready for your repo.
+This is a source gist, not a claim that the current checkout completes the
+sequence. The executable-bit, missing-library and dispatcher defects are
+measured in [`measurement.md`](measurement.md) and listed with proposed diffs
+in [`BUGS-FOUND.md`](BUGS-FOUND.md).

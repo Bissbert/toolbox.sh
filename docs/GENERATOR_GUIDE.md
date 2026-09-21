@@ -1,94 +1,94 @@
-# Toolbox.sh Project Generator Guide
+[← back to the overview](../README.md)
 
-Toolbox.sh ships with a JSON-driven generator that scaffolds portable POSIX shell CLIs in seconds. Use this guide as the README for newly generated repositories—it explains the workflow, directory layout, and tasks maintainers should tackle next.
+# Project generator guide
 
-## Why Toolbox.sh
-- **Portable:** every script targets `/bin/sh`, no bashisms required.
-- **Structured:** Git-style command/namespace layout with `__main` entry points for groups.
-- **Metadata aware:** auto-generated help output and tab-completion powered by `lib/cmd.sh`.
-- **Tested:** TAP-style harness and generator tests keep regressions out.
+`tools/generate` turns a JSON manifest into a command-tree skeleton. A string
+is a leaf command. An object has a `name` and a `commands` array, and becomes a
+group directory with an executable `__main` file. Nested objects are walked
+recursively.
 
-## Requirements
-- POSIX shell + coreutils (already present on Linux/macOS).
-- `python3` for manifest parsing and templating.
-- Optional: `git` if you plan to use `self-update --from-git`.
+```mermaid
+flowchart TD
+    A["write manifest.json"] --> B{"valid JSON list?"}
+    B -->|"no"| E["report validation error"]
+    B -->|"yes"| C["copy templates/project"]
+    C --> D["remove sample command and test"]
+    D --> F["rename bin/toolbox"]
+    F --> G["copy command templates"]
+    G --> H["create leaf and group paths"]
+    H --> I["run generated dispatcher"]
 
-## Quick Start
-1. **Describe your command tree**
-   ```json
-   [
-     "status",
-     { "name": "release", "commands": [
-       "plan",
-       { "name": "deploy", "commands": ["canary", "prod"] }
-     ] }
-   ]
-   ```
-2. **Generate a project**
-   ```sh
-   bin/toolbox generate --name demo --manifest manifest.json --dest ./demo
-   ```
-3. **Review the output**
-   - `bin/demo` — dispatcher renamed to match `--name`.
-   - `tools/` — command tree; directories denote groups, `__main` provides group help.
-   - `lib/` — shared helpers (`common.sh`, `log.sh`, `args.sh`, `config.sh`, `cmd.sh`).
-   - `templates/command/` — stubs consumed by `tools/new` when you add more commands.
-   - `docs/` — includes this guide and a gist template.
-4. **Implement command logic** using the metadata placeholders in each generated script.
-5. **Run tests** before sharing:
-   ```sh
-   sh tests/run
-   ```
+    style A fill:#9e6a03,stroke:#d29922,color:#fff
+    style H fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style I fill:#238636,stroke:#3fb950,color:#fff
+    style E fill:#da3633,stroke:#f85149,color:#fff
+```
 
-## Manifest Rules
-- Root manifest must be a JSON array.
-- Leaf commands are strings (`"status"`).
-- Command groups are objects with a `name` and `commands` array.
-- Groups can be nested arbitrarily; directories are created automatically.
-- Names should be lowercase/hyphenated to align with file paths.
-- Validation errors halt generation with a descriptive message—fix the offending node and rerun.
+## Manifest shape
 
-## Command Metadata
-Each generated script sources `lib/cmd.sh`. Update these fields as you implement behaviour:
-- `CMD_USAGE`, `CMD_SUMMARY`, `CMD_DESCRIPTION` — displayed in `--help` output.
-- `CMD_OPTIONS` — list flags as `--flag|VALUE|Description`; one entry per line.
-- `CMD_SUBCOMMANDS` — populate in group `__main` files to advertise child commands.
-- `CMD_EXAMPLES` — add realistic invocations for docs and demos.
-Keeping metadata accurate ensures `bin/<name> completion` produces correct Bash/Zsh scripts.
+```json
+[
+  "status",
+  {
+    "name": "report",
+    "commands": ["daily", {"name": "archive", "commands": ["list"]}]
+  }
+]
+```
 
-## Working With Templates
-- Customize `templates/command/leaf` and `templates/command/group` to bake in organisation-wide defaults (logging, global flags, analytics).
-- Run `bin/<name> new analytics cohort` (or similar) to scaffold additional commands using your updated templates.
-- Update `templates/project/README.md` and `templates/project/AGENTS.md` so future repos start with accurate documentation.
+The resulting paths are conceptually:
 
-## Testing & CI Recommendations
-- The TAP harness (`tests/run`) writes isolated artefacts under `.tmp-tests/`.
-- Create one `.t` file per command; assert exit status and relevant stdout/stderr.
-- Exercise the generator in CI by running `bin/toolbox generate` with a sample manifest and executing the new project’s tests.
-- Keep fixtures small—prefer focused manifests to reduce CI time.
+```text
+tools/status
+tools/report/__main
+tools/report/daily
+tools/report/archive/__main
+tools/report/archive/list
+```
 
-## Maintenance Checklist
-- Regenerate completions after adding flags: `bin/<name> completion bash > completions/<name>.bash`.
-- Run `make test` before tagging releases or publishing generated templates.
-- Update documentation placeholders in `docs/` and the root `README.md` as you add features.
-- Use `tools/self-update --from-path` to sync local installations with the latest framework.
+The generator also copies the project README, Makefile, libraries, test
+harness, command templates and built-in project tools. The generated
+dispatcher is renamed to the manifest's `--name` value.
 
-## Troubleshooting
-- **Missing python3:** install via `apt install python3`, `brew install python`, or equivalent.
-- **Unknown command after generation:** ensure the command script is executable (`chmod +x`).
-- **Help output missing options:** populate `CMD_OPTIONS` and rerun `--help` to verify.
-- **Completion script stale:** rerun `bin/<name> completion bash|zsh` after changing metadata.
+## Adding a command after generation
 
-## Shipping & Packaging Ideas
-- Tag releases and publish signed tarballs (use `make dist`) so consumers can run `make install-user` without cloning.
-- Build Debian packages with `make deb` and push them to your apt repository for managed installs.
-- Provide a Homebrew tap or Linuxbrew formula that stages the tarball and links the dispatcher.
-- Offer a `curl | sh` installer that downloads the latest release and installs to `~/.local/opt`.
-- Build an OCI image (`ghcr.io/<org>/toolbox-generator`) for CI pipelines that only need `toolbox generate`.
-- Consider OS-native packages (Deb/RPM/Nix) if your team’s deployment targets rely on them.
+The intended lifecycle for a new command is:
 
-## Next Steps for New Projects
-1. Replace placeholders in `README.md`, `AGENTS.md`, and `TODO.md` with project-specific content.
-2. Review command stubs and implement real behaviour.
-3. Connect the project to CI with `sh tests/run` as the primary job.
-4. Share the quickstart gist (see `docs/GENERATOR_GIST.md`) with your team.
+```mermaid
+flowchart LR
+    A["choose path"] --> B["bin/<name> new path"]
+    B --> C["copy leaf or group template"]
+    C --> D["replace command placeholders"]
+    D --> E["edit implementation"]
+    E --> F["fill CMD_* metadata"]
+    F --> G["run help and tests"]
+
+    style B fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style E fill:#9e6a03,stroke:#d29922,color:#fff
+    style G fill:#238636,stroke:#3fb950,color:#fff
+```
+
+For a leaf, the last path segment is the file name. For a group, `--group`
+creates the directory and its `__main` file. The templates expect the command
+to source the libraries relative to the project root and to keep metadata
+close to the implementation.
+
+## Current checkout behavior
+
+The source-level sequence is copy-pasteable:
+
+```sh
+cat >manifest.json <<'JSON'
+["status", {"name": "report", "commands": ["daily"]}]
+JSON
+/bin/sh bin/toolbox generate --name depot --manifest manifest.json --dest ./depot
+```
+
+It is not a successful quick start on the current revision. Direct invocation
+is blocked by tracked file modes; after permissions are prepared only inside a
+scratch archive, the generator copies its skeleton and then `tools/new` cannot
+source `depot/lib/config.sh`. The failure was observed by
+`devtools/measure.py`; no successful generated-project transcript is claimed.
+
+The proposed source changes for the missing library, ignore rule and related
+dispatcher defects are collected in [`BUGS-FOUND.md`](BUGS-FOUND.md).
