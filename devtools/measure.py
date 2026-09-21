@@ -44,9 +44,24 @@ def command_lines(help_text):
     return [line.strip() for line in body.splitlines() if line.strip()]
 
 
-def scratch_probe():
+def source_base():
+    result = subprocess.run(
+        ["git", "merge-base", "HEAD", "main"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=REPO,
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+
+
+def scratch_probe(revision):
     archive = subprocess.run(
-        ["git", "-C", str(REPO), "archive", "--format=tar", "HEAD"],
+        ["git", "-C", str(REPO), "archive", "--format=tar", revision],
         check=True,
         capture_output=True,
     ).stdout
@@ -91,16 +106,17 @@ def scratch_probe():
 
 
 def main():
-    mode_lines = subprocess.run(
-        ["git", "ls-files", "-s"], cwd=REPO, capture_output=True, text=True,
-        check=True,
+    revision = source_base()
+    tree_lines = subprocess.run(
+        ["git", "ls-tree", "-r", revision], cwd=REPO,
+        capture_output=True, text=True, check=True,
     ).stdout.splitlines()
-    modes = [line.split()[0] for line in mode_lines]
-    emit("head", subprocess.run(
-        ["git", "rev-parse", "--short", "HEAD"], cwd=REPO,
+    modes = [line.split()[0] for line in tree_lines]
+    emit("source_base", subprocess.run(
+        ["git", "rev-parse", "--short", revision], cwd=REPO,
         capture_output=True, text=True, check=True,
     ).stdout.strip())
-    emit("tracked_files", len(mode_lines))
+    emit("tracked_files", len(tree_lines))
     emit("tracked_executable_files", sum(mode == "100755" for mode in modes))
 
     code, text = run(["/bin/sh", "bin/toolbox", "--version"])
@@ -127,7 +143,7 @@ def main():
     emit("config_ignore_rc", code)
     emit("config_ignore_output", text)
 
-    scratch_probe()
+    scratch_probe(revision)
 
 
 if __name__ == "__main__":

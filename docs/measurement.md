@@ -38,7 +38,7 @@ python3 devtools/measure.py
 The command actually run for this pass printed:
 
 ```text
-head    e4cd682
+source_base    e4cd682
 tracked_files    48
 tracked_executable_files    0
 version_rc    0
