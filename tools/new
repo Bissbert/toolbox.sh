@@ -114,16 +114,11 @@ set -- "$target" "__CMD_NAME__" "$cmd_name" "__CMD_USAGE_PATH__" "$usage_path"
 if [ "$GROUP" -eq 1 ]; then
   child_list=$(for entry in "$target_dir"/*; do
     name=${entry##*/}
-    if [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; then
+    if [ "$name" != "__main" ] && [ "${name#.*}" = "$name" ] &&
+       { [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; }; then
       printf '%s\n' "$name"
     fi
-  done | LC_ALL=C sort |
-    while IFS= read -r name; do
-      case "$name" in
-        __main|.*) continue ;;
-      esac
-      printf '%s\n' "$name"
-    done)
+  done | LC_ALL=C sort)
   [ -n "$child_list" ] || child_list='<subcommand>'
   first_child=$(printf '%s\n' "$child_list" | head -n 1)
   set -- "$@" "__CMD_SUBCOMMANDS__" "$child_list" "__FIRST_CHILD__" "$first_child"
