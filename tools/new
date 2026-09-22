@@ -13,7 +13,7 @@ case "$_this" in
      esac ;;
 esac
 _dir=${_this%/*}
-_root=${_dir%/tools}
+_root=${_this%/tools/*}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {
