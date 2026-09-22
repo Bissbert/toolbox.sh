@@ -192,24 +192,30 @@ esac
 
 shift
 cmd_parts=$cmd
-consumed_guess=1
+cmd_count=1
 
-set -- "$@"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --) break ;;
     -*) break ;;
     *)
-      cmd_parts="$cmd_parts $1"
-      consumed_guess=$((consumed_guess + 1))
-      shift
-      continue
+      candidate="$cmd_parts $1"
+      candidate_data=$(resolve_command $candidate 2>/dev/null || printf '')
+      if [ -n "$candidate_data" ]; then
+        candidate_rest=${candidate_data#*|}
+        candidate_consumed=${candidate_rest%%|*}
+        if [ "$candidate_consumed" -eq $((cmd_count + 1)) ]; then
+          cmd_parts=$candidate
+          cmd_count=$((cmd_count + 1))
+          shift
+          continue
+        fi
+      fi
+      break
       ;;
   esac
   break
 done
-
-set -- "$@"
 
 if data=$(resolve_command $cmd_parts 2>/dev/null); then
   script=${data%%|*}
