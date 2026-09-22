@@ -110,14 +110,14 @@ _list_all_command_paths() {
       */__main) : ;;
       *)
         rel=${path#"$TOOLS_DIR/"}
-        printf '%s\n' "${rel//\// }"
+        printf '%s\n' "$rel" | tr '/' ' '
         ;;
     esac
   done
   find "$TOOLS_DIR" -type f -name '__main' -perm -u+x -print | while IFS= read -r path; do
     rel=${path#"$TOOLS_DIR/"}
     dir=${rel%/__main}
-    printf '%s\n' "${dir//\// }"
+    printf '%s\n' "$dir" | tr '/' ' '
   done | LC_ALL=C sort -u
 }
 
