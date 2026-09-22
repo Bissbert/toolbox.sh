@@ -64,15 +64,16 @@ __TOOLBOX_HELP__
 }
 
 _list_dir_entries() {
-  local dir=$1
-  find "$dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
-    LC_ALL=C sort |
-    while IFS= read -r name; do
-      case "$name" in
-        __main|.*) continue ;;
-      esac
+  local dir=$1 entry name
+  for entry in "$dir"/*; do
+    name=${entry##*/}
+    case "$name" in
+      __main|.*) continue ;;
+    esac
+    if [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; then
       printf '%s\n' "$name"
-    done
+    fi
+  done | LC_ALL=C sort
 }
 
 list_commands() {

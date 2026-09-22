@@ -112,8 +112,12 @@ chmod +x "$target" 2>/dev/null || :
 set -- "$target" "__CMD_NAME__" "$cmd_name" "__CMD_USAGE_PATH__" "$usage_path"
 
 if [ "$GROUP" -eq 1 ]; then
-  child_list=$(find "$target_dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
-    LC_ALL=C sort |
+  child_list=$(for entry in "$target_dir"/*; do
+    name=${entry##*/}
+    if [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; then
+      printf '%s\n' "$name"
+    fi
+  done | LC_ALL=C sort |
     while IFS= read -r name; do
       case "$name" in
         __main|.*) continue ;;
