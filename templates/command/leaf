@@ -24,7 +24,7 @@ CMD_OPTIONS=$(cat <<'__CMD_OPTIONS__'
 # --flag|VALUE|Describe the flag
 __CMD_OPTIONS__
 )
-CMD_EXAMPLES=$(cat <<'__CMD_EXAMPLES__'
+CMD_EXAMPLES=$(cat <<__CMD_EXAMPLES__
 ${TOOLBOX_NAME} __CMD_USAGE_PATH__
 __CMD_EXAMPLES__
 )
