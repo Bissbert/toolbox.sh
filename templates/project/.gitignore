@@ -5,8 +5,8 @@ completions/
 .tmp-tests/
 
 # Local configs (if created alongside project)
-config
-config.sh
+/config
+/config.sh
 
 # OS/editor files
 .DS_Store
@@ -19,4 +19,3 @@ config.sh
 
 # Logs
 *.log
-
