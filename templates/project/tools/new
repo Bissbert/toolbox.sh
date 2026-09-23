@@ -13,7 +13,7 @@ case "$_this" in
      esac ;;
 esac
 _dir=${_this%/*}
-_root=${_dir%/tools}
+_root=${_this%/tools/*}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {
@@ -112,14 +112,13 @@ chmod +x "$target" 2>/dev/null || :
 set -- "$target" "__CMD_NAME__" "$cmd_name" "__CMD_USAGE_PATH__" "$usage_path"
 
 if [ "$GROUP" -eq 1 ]; then
-  child_list=$(find "$target_dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
-    LC_ALL=C sort |
-    while IFS= read -r name; do
-      case "$name" in
-        __main|.*) continue ;;
-      esac
+  child_list=$(for entry in "$target_dir"/*; do
+    name=${entry##*/}
+    if [ "$name" != "__main" ] && [ "${name#.*}" = "$name" ] &&
+       { [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; }; then
       printf '%s\n' "$name"
-    done)
+    fi
+  done | LC_ALL=C sort)
   [ -n "$child_list" ] || child_list='<subcommand>'
   first_child=$(printf '%s\n' "$child_list" | head -n 1)
   set -- "$@" "__CMD_SUBCOMMANDS__" "$child_list" "__FIRST_CHILD__" "$first_child"

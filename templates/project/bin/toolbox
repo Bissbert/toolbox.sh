@@ -43,7 +43,7 @@ _usage_commands() {
 }
 
 usage() {
-  cat <<'__TOOLBOX_HELP__'
+  cat <<__TOOLBOX_HELP__
 ${TOOLBOX_NAME} ${TOOLBOX_VERSION}
 
 Usage: ${TOOLBOX_NAME} [global-options] <command> [args]
@@ -64,15 +64,16 @@ __TOOLBOX_HELP__
 }
 
 _list_dir_entries() {
-  local dir=$1
-  find "$dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
-    LC_ALL=C sort |
-    while IFS= read -r name; do
-      case "$name" in
-        __main|.*) continue ;;
-      esac
+  local dir=$1 entry name
+  for entry in "$dir"/*; do
+    name=${entry##*/}
+    case "$name" in
+      __main|.*) continue ;;
+    esac
+    if [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; then
       printf '%s\n' "$name"
-    done
+    fi
+  done | LC_ALL=C sort
 }
 
 list_commands() {
@@ -109,14 +110,14 @@ _list_all_command_paths() {
       */__main) : ;;
       *)
         rel=${path#"$TOOLS_DIR/"}
-        printf '%s\n' "${rel//\// }"
+        printf '%s\n' "$rel" | tr '/' ' '
         ;;
     esac
   done
   find "$TOOLS_DIR" -type f -name '__main' -perm -u+x -print | while IFS= read -r path; do
     rel=${path#"$TOOLS_DIR/"}
     dir=${rel%/__main}
-    printf '%s\n' "${dir//\// }"
+    printf '%s\n' "$dir" | tr '/' ' '
   done | LC_ALL=C sort -u
 }
 
@@ -191,24 +192,30 @@ esac
 
 shift
 cmd_parts=$cmd
-consumed_guess=1
+cmd_count=1
 
-set -- "$@"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --) break ;;
     -*) break ;;
     *)
-      cmd_parts="$cmd_parts $1"
-      consumed_guess=$((consumed_guess + 1))
-      shift
-      continue
+      candidate="$cmd_parts $1"
+      candidate_data=$(resolve_command $candidate 2>/dev/null || printf '')
+      if [ -n "$candidate_data" ]; then
+        candidate_rest=${candidate_data#*|}
+        candidate_consumed=${candidate_rest%%|*}
+        if [ "$candidate_consumed" -eq $((cmd_count + 1)) ]; then
+          cmd_parts=$candidate
+          cmd_count=$((cmd_count + 1))
+          shift
+          continue
+        fi
+      fi
+      break
       ;;
   esac
   break
 done
-
-set -- "$@"
 
 if data=$(resolve_command $cmd_parts 2>/dev/null); then
   script=${data%%|*}
