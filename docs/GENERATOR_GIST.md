@@ -38,7 +38,8 @@ After generation, edit the command file and replace its `CMD_*` placeholders.
 Use `--help` to inspect the metadata that the command exposes, then add a TAP
 test under `tests/`.
 
-This is a source gist, not a claim that the current checkout completes the
-sequence. The executable-bit, missing-library and dispatcher defects are
-measured in [`measurement.md`](measurement.md) and listed with proposed diffs
-in [`BUGS-FOUND.md`](BUGS-FOUND.md).
+The checkout this documentation pass described could not complete the sequence:
+the executable-bit, missing-library and dispatcher defects are measured in
+[`measurement.md`](measurement.md) and listed in
+[`BUGS-FOUND.md`](BUGS-FOUND.md). All of them have since been fixed on the
+default branch, where the sequence runs end to end.

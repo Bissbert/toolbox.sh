@@ -3,10 +3,20 @@
 # Bugs found during the documentation pass
 
 This file records defects in the reverted checkout at `e4cd682`. No source fix
-described here was applied. The first saved patch contains fixes proposed
-during the interrupted pass; the second contains the dropped `b5f6e4d` source
-commit. Reproductions below were run against the current checkout or a
-temporary copy when runtime permissions were needed.
+described here was applied during the documentation pass itself. The first
+saved patch contains fixes proposed during the interrupted pass; the second
+contains the dropped `b5f6e4d` source commit. Reproductions below were run
+against that checkout or a temporary copy when runtime permissions were needed.
+
+> **Since this pass:** an independent adjudication confirmed all ten entries,
+> and a subsequent fix pass applied all ten to the default branch, in commits
+> `1709acf`, `5d89519`, `3e96df1`, `6b1fe41`, `c0ba03d`, `ed519f9`, `c58633c`,
+> `fc4dabd`, `6715cf4` and `272de6b`, in the order the entries appear below.
+> Re-running `python3 devtools/measure.py` on the fixed tree reports 21
+> executable tracked files, five discovered commands, a `tests/run` exit status
+> of `0` with 20 of 20 TAP assertions passing, and a generator probe that runs
+> to completion. Read the reproductions and diffs below as the state at the
+> time of the pass, not as the current state of the default branch.
 
 ```mermaid
 flowchart TD
@@ -513,6 +523,7 @@ diff --git a/templates/command/group b/templates/command/group
 
 ## Scope note
 
-The fixes above remain proposals. This pull request changes documentation,
-adds the measurement script under `devtools/`, and leaves all tracked source
-behavior and file modes untouched.
+The documentation pass that produced this file changed documentation, added the
+measurement script under `devtools/`, and left all tracked source behavior and
+file modes untouched. The fixes were applied separately, in the commits listed
+at the top of this file.

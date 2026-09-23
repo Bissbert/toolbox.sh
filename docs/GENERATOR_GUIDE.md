@@ -85,10 +85,13 @@ JSON
 ```
 
 It is not a successful quick start on the current revision. Direct invocation
-is blocked by tracked file modes; after permissions are prepared only inside a
-scratch archive, the generator copies its skeleton and then `tools/new` cannot
-source `depot/lib/config.sh`. The failure was observed by
-`devtools/measure.py`; no successful generated-project transcript is claimed.
+was blocked by tracked file modes; after permissions were prepared inside a
+scratch archive, the generator copied its skeleton and then `tools/new` could
+not source `depot/lib/config.sh`. That failure was observed by
+`devtools/measure.py`, and no successful generated-project transcript was
+claimed at the time.
 
-The proposed source changes for the missing library, ignore rule and related
-dispatcher defects are collected in [`BUGS-FOUND.md`](BUGS-FOUND.md).
+The missing library, the ignore rule and the related dispatcher defects have
+since been fixed on the default branch, where the same probe runs to
+completion. Their reproductions and diffs are collected in
+[`BUGS-FOUND.md`](BUGS-FOUND.md).

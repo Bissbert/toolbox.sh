@@ -74,11 +74,11 @@ The intended workflow is:
 /bin/sh tests/run
 ```
 
-The current dispatcher consumes `report` and `weekly` while probing the command
-path, then passes no positional arguments to `tools/new`. In a permissions-
-prepared scratch copy the same command therefore fails as an unknown command
-path instead of creating the leaf. This is a measured limitation, not a
-working quick-start claim; the exact proposed change is in
+At the time of this pass the dispatcher consumed `report` and `weekly` while
+probing the command path and then passed no positional arguments to
+`tools/new`, so in a permissions-prepared scratch copy the command failed as an
+unknown command path instead of creating the leaf. That defect has since been
+fixed on the default branch; the reproduction and the applied diff are in
 [`BUGS-FOUND.md`](BUGS-FOUND.md).
 
 ## What the scaffold enforces
@@ -92,6 +92,7 @@ working quick-start claim; the exact proposed change is in
 - The test harness expects shell scripts and emits TAP-like `ok` and `not ok`
   records.
 
-These conventions make the tree inspectable, but they also explain why file
-mode and shell-compatibility defects have a wide blast radius. See
-[`measurement.md`](measurement.md) for the commands used to observe them.
+These conventions make the tree inspectable, but they also explain why the file
+mode and shell-compatibility defects recorded in this pass had such a wide blast
+radius. See [`measurement.md`](measurement.md) for the commands used to observe
+them.
