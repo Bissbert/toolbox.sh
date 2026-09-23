@@ -4,9 +4,10 @@ Toolbox.sh is a shell framework for Git-style command suites: a dispatcher
 maps command paths to executable files, shared libraries provide logging,
 argument parsing and configuration, and a JSON manifest can describe a new
 project. The repository contains the source scaffold, command templates and a
-TAP-style test harness. This documentation describes the checkout as it is
-currently committed, including the defects recorded in
-[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
+TAP-style test harness. This documentation was written against a checkout that
+still carried the defects recorded in
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md); all ten have since been fixed on
+the default branch, and the transcripts below are the re-measured results.
 
 ```mermaid
 flowchart LR
@@ -32,17 +33,15 @@ The version probe is copy-pasteable from the current checkout:
 /bin/sh bin/toolbox help
 ```
 
-The first command exits successfully and prints `toolbox 0.1.0`. The second
-command also exits successfully, but currently shows an empty `Commands:`
-section. Invoking `./bin/toolbox` directly returns permission denied because
-the tracked scripts have no executable bit. The exact probe is reproducible
-with:
+Both commands exit successfully: the first prints `toolbox 0.1.0`, the second
+lists five discovered commands. `./bin/toolbox` also runs directly, because the
+tracked entry points carry mode `100755`. The exact probe is reproducible with:
 
 ```sh
 python3 devtools/measure.py
 ```
 
-The intended generator sequence is:
+The generator sequence is:
 
 ```sh
 cat >manifest.json <<'JSON'
@@ -53,11 +52,12 @@ cd depot
 /bin/sh bin/depot help
 ```
 
-On this revision the sequence cannot complete: after runtime permissions are
-prepared in a scratch copy, generation stops when `tools/new` sources the
-missing generated `lib/config.sh`. That failure is measured and explained in
-[`docs/measurement.md`](docs/measurement.md), not hidden behind a fabricated
-successful transcript.
+The sequence completes, and `/bin/sh bin/depot help` lists the generated
+`report` and `status` commands with the project's own name and version
+substituted into the help text. At the time of the documentation pass it could
+not complete: generation stopped when `tools/new` sourced a
+`templates/project/lib/config.sh` that did not exist. Both the recorded failure
+and the current run are in [`docs/measurement.md`](docs/measurement.md).
 
 ## Architecture
 
@@ -97,22 +97,24 @@ flowchart TD
 ## Measured results
 
 The following values come from `python3 devtools/measure.py` on the checkout
-at `e4cd682`:
+at `f3a0d9f`, after the ten recorded defects were fixed. The column alongside
+is the same probe on `e4cd682`, the checkout this documentation pass described:
 
-| Probe | Result |
-|---|---:|
-| tracked files | 48 |
-| tracked executable files | 0 |
-| `/bin/sh bin/toolbox --version` exit status | 0 |
-| discovered commands in `help` | 0 |
-| `./bin/toolbox --version` exit status | 126 |
-| `/bin/sh tests/run` exit status | 127 |
-| scratch generator exit status | 1 |
+| Probe | Result | At `e4cd682` |
+|---|---:|---:|
+| tracked files | 55 | 48 |
+| tracked executable files | 21 | 0 |
+| `/bin/sh bin/toolbox --version` exit status | 0 | 0 |
+| discovered commands in `help` | 5 | 0 |
+| `./bin/toolbox --version` exit status | 0 | 126 |
+| `/bin/sh tests/run` exit status | 0 | 127 |
+| TAP assertions passed / failed | 20 / 0 | 1 / 5 |
+| scratch generator exit status | 0 | 1 |
 
-The scratch probe changes permissions only inside a temporary archive so it can
-reach the generator code. It does not change this checkout. Its command still
-stops at `templates/project/lib/config.sh`, which does not exist in the
-current tree.
+The scratch probe runs the generator from a temporary `git archive` rather than
+from this checkout. It no longer needs to prepare permissions first, and it now
+runs to completion instead of stopping at a missing
+`templates/project/lib/config.sh`.
 
 ## Repository layout
 
@@ -129,28 +131,23 @@ current tree.
 
 ## Known limitations
 
-- The tracked shell files are mode `100644`, so direct execution fails and the
-  dispatcher cannot discover executable commands.
-- `bin/toolbox` and `tools/new` use GNU `find -printf`; on the macOS shell the
-  directory listing becomes empty even after permissions are prepared.
-- The dispatcher consumes positional arguments while probing command paths. For
-  example, `hello Alice` does not pass `Alice` to the leaf command.
-- The generated project omits `lib/config.sh`, so its first generated command
-  cannot source its libraries. The template ignore rule also ignores a nested
-  `config.sh` path.
-- Nested generated commands calculate the project root from their immediate
-  directory and then source a nonexistent nested `lib/` directory.
-- `tools/new` contains a `case` branch inside a command substitution that the
-  macOS shell rejects before it can scaffold a group.
-- `_list_all_command_paths` uses non-POSIX `${value//old/new}` expansion. Under
-  `dash`, `__all_commands` reports `Bad substitution` and completion has no
-  usable command list.
-- The generated dispatcher keeps its help heredoc quoted, so its displayed
-  `${TOOLBOX_NAME}` and `${TOOLBOX_VERSION}` remain literal.
+- The dispatcher and the generated projects target POSIX `sh`. Bash-specific
+  syntax in a command file will not be caught by the framework.
+- `tests/run` is a TAP-style harness with no external dependencies; it exercises
+  the dispatcher and the generator, not a matrix of shells or platforms.
+- The generator writes a skeleton from a fixed template set. A project that
+  needs a different layout has to diverge from the template after generation.
 
-Each item has a reproduction and a proposed, uncommitted fix in
-[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md). The documentation-only scope means
-the source remains unchanged.
+Ten defects recorded during the documentation pass have since been fixed on the
+default branch: the missing executable bits on tracked entry points, the
+generated project's missing `lib/config.sh` and the template ignore rule that
+hid it, the GNU-only `find -printf` discovery, the dispatcher dropping
+positional arguments, the nested-command root resolution, the `tools/new`
+command substitution the macOS shell rejected, the non-POSIX `${value//old/new}`
+expansion in `_list_all_command_paths`, and the two quoted heredocs that left
+`${TOOLBOX_NAME}` and `${TOOLBOX_VERSION}` literal in generated help and
+examples. Each still has its reproduction and diff in
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
 
 ## Further documentation
 
@@ -158,4 +155,4 @@ the source remains unchanged.
 - [`docs/GENERATOR_GUIDE.md`](docs/GENERATOR_GUIDE.md) — manifest and generation lifecycle.
 - [`docs/commands.md`](docs/commands.md) — command metadata and conventions.
 - [`docs/measurement.md`](docs/measurement.md) — provenance for every published result.
-- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — verified defects and proposed diffs.
+- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — verified defects and the diffs since applied.

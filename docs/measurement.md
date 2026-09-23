@@ -2,7 +2,8 @@
 
 # Measurement and provenance
 
-This pass reports the reverted checkout, not a repaired copy. The only
+This pass reports the reverted checkout at `e4cd682`, not a repaired copy. A
+re-run on the fixed default branch is recorded below it for comparison. The only
 measurement runner committed for the pass is
 [`devtools/measure.py`](../devtools/measure.py). It uses Python's standard
 library, runs the shell commands directly, and uses a temporary `git archive`
@@ -99,14 +100,44 @@ status=0
 The exact temporary-directory suffixes are intentionally not part of the
 published result; the command, shell, status and error are what matter.
 
+## Re-run after the fixes
+
+The same command on the fixed default branch at `f3a0d9f` printed:
+
+```text
+source_base    f3a0d9f
+tracked_files    55
+tracked_executable_files    21
+version_rc    0
+version_output    toolbox 0.1.0
+help_rc    0
+help_commands    5
+direct_version_rc    0
+direct_version_output    toolbox 0.1.0
+tests_rc    0
+tests_ok    20
+tests_not_ok    0
+config_ignore_rc    1
+config_ignore_output
+scratch_help_rc    0
+scratch_help_commands    5
+scratch_hello_rc    0
+scratch_hello_output    toolbox: Hello, Alice!
+scratch_generate_rc    0
+scratch_generate_output    toolbox: Copying skeleton into <scratch>/depot\ndepot: created status\ntoolbox: Project 'depot' generated at <scratch>/depot
+```
+
+`config_ignore_rc` is `1` because the `grep` that looked for the ignore rule
+now finds nothing, which is the fixed state.
+
 ## What was not measured
 
-The generator could not reach a complete generated toolset from the current
-source because `templates/project/lib/config.sh` is absent. Therefore this
-pass does not publish command counts, test results or a runtime for a
-successful generated project. No animation is claimed: there is no complete
-real session to capture from the current checkout. The diagrams in the other
-write-ups are source-level explanations, not recordings.
+At the time of this pass the generator could not reach a complete generated
+toolset, because `templates/project/lib/config.sh` was absent. The pass
+therefore published no command counts, test results or runtime for a successful
+generated project; the re-run above supplies them. No animation is claimed:
+no complete real session was captured. The diagrams in the other write-ups are
+source-level explanations, not recordings.
 
-The proposed fixes and the distinction between verified and inferred behavior
+The applied fixes and the distinction between verified and inferred behavior
 are in [`BUGS-FOUND.md`](BUGS-FOUND.md).
