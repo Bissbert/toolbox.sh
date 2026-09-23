@@ -1,0 +1,17 @@
+# Documentation
+
+The write-ups show the filesystem-driven architecture, generator lifecycle and
+command contract. [`BUGS-FOUND.md`](BUGS-FOUND.md) records source defects
+without changing them; [`measurement.md`](measurement.md) is the provenance
+for every result in the overview.
+
+| Write-up | Focus |
+|---|---|
+| [`architecture.md`](architecture.md) | Dispatcher, shared libraries and generated tree. |
+| [`GENERATOR_GUIDE.md`](GENERATOR_GUIDE.md) | Manifest grammar and project-generation lifecycle. |
+| [`GENERATOR_GIST.md`](GENERATOR_GIST.md) | Compact generator reference. |
+| [`commands.md`](commands.md) | Metadata fields and command conventions. |
+| [`measurement.md`](measurement.md) | Commands, environments and measured output. |
+| [`BUGS-FOUND.md`](BUGS-FOUND.md) | Verified bugs and proposed fenced diffs. |
+
+[← back to the overview](../README.md)

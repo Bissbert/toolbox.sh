@@ -1,94 +1,161 @@
-# Toolbox.sh — POSIX CLI Toolkit & Generator
+# Toolbox.sh — POSIX CLI Toolkit and Generator
 
-Toolbox.sh is a batteries-included framework for building Git-style command suites in pure POSIX shell. It combines a flexible dispatcher, reusable libraries, metadata-driven help output, and a JSON-powered project generator so you can spin up fully tested CLIs without leaving `/bin/sh`.
+Toolbox.sh is a shell framework for Git-style command suites: a dispatcher
+maps command paths to executable files, shared libraries provide logging,
+argument parsing and configuration, and a JSON manifest can describe a new
+project. The repository contains the source scaffold, command templates and a
+TAP-style test harness. This documentation describes the checkout as it is
+currently committed, including the defects recorded in
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
 
-## Highlights
-- **Portable by default** – every script targets `sh`, avoiding bashisms and external dependencies.
-- **Structured subcommands** – directories map to namespaces, with `__main` entry points for groups.
-- **Metadata-aware UX** – populate `CMD_*` fields once and gain uniform `--help` output plus Bash/Zsh completion.
-- **Generator included** – feed a manifest to `bin/toolbox generate` and get a ready-to-run project with tests and templates.
+```mermaid
+flowchart LR
+    M["manifest.json"] --> G["tools/generate"]
+    G --> S["generated project"]
+    S --> B["bin/<name>"]
+    B --> R["resolve command path"]
+    R --> C["tools/<path>"]
+    C --> L["lib/*.sh"]
+    C --> H["metadata-driven help"]
 
-## Prerequisites
-- POSIX shell and coreutils (standard on Linux/macOS).
-- `python3` for manifest parsing and templating.
-- Optional: `git` for `tools/self-update --from-git`.
+    style G fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style C fill:#238636,stroke:#3fb950,color:#fff
+    style H fill:#8250df,stroke:#bc8cff,color:#fff
+```
 
-## Quick Start
+## Quick start
+
+The version probe is copy-pasteable from the current checkout:
+
 ```sh
-# Inspect built-in commands
-bin/toolbox help
+/bin/sh bin/toolbox --version
+/bin/sh bin/toolbox help
+```
 
-# Describe your command tree
+The first command exits successfully and prints `toolbox 0.1.0`. The second
+command also exits successfully, but currently shows an empty `Commands:`
+section. Invoking `./bin/toolbox` directly returns permission denied because
+the tracked scripts have no executable bit. The exact probe is reproducible
+with:
+
+```sh
+python3 devtools/measure.py
+```
+
+The intended generator sequence is:
+
+```sh
 cat >manifest.json <<'JSON'
-[
-  "status",
-  { "name": "release", "commands": [
-    "plan",
-    { "name": "deploy", "commands": ["canary", "prod"] }
-  ] }
-]
+["status", {"name": "report", "commands": ["daily"]}]
 JSON
-
-# Generate a project in ./demo
-bin/toolbox generate --name demo --manifest manifest.json --dest ./demo
-
-# Add logic, then run the tests
-cd demo
-sh tests/run
+/bin/sh bin/toolbox generate --name depot --manifest manifest.json --dest ./depot
+cd depot
+/bin/sh bin/depot help
 ```
 
-## Command Overview
-| Command | Purpose |
-| --- | --- |
-| `hello` | Example leaf command wiring `lib/cmd.sh` metadata. |
-| `new` | Scaffold a leaf or group command (`tools/new analytics cohort`). |
-| `generate` | Create a full project from a JSON manifest. |
-| `completion` | Emit dynamic Bash/Zsh completion informed by command metadata. |
-| `self-update` | Sync the framework from a local path or git remote. |
+On this revision the sequence cannot complete: after runtime permissions are
+prepared in a scratch copy, generation stops when `tools/new` sources the
+missing generated `lib/config.sh`. That failure is measured and explained in
+[`docs/measurement.md`](docs/measurement.md), not hidden behind a fabricated
+successful transcript.
 
-## Project Layout
+## Architecture
+
+The top-level tree and a generated tree use the same dispatcher and library
+shape. Directories below `tools/` are command groups; an executable `__main`
+file represents the group itself.
+
+```mermaid
+flowchart TD
+    U["user: toolbox <command> [args]"] --> D["bin/toolbox"]
+    D --> O["global options and config"]
+    D --> Q["tools/<command path>"]
+    Q --> P["leaf script"]
+    Q --> N["group/__main"]
+    P --> K["lib/common.sh<br/>lib/log.sh<br/>lib/args.sh<br/>lib/config.sh"]
+    N --> K
+    P --> T["lib/cmd.sh metadata"]
+    N --> T
+    T --> H["help and completion metadata"]
+
+    style D fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style K fill:#9e6a03,stroke:#d29922,color:#fff
+    style H fill:#8250df,stroke:#bc8cff,color:#fff
 ```
-bin/toolbox          # Dispatcher / entry point
-lib/                 # Shared helpers (common.sh, log.sh, args.sh, config.sh, cmd.sh)
-templates/command/   # Leaf/group stubs used by `tools/new` and the generator
-templates/project/   # Skeleton copied into new projects (docs, tests, tooling)
-tools/               # Built-in commands
-tests/               # TAP-style test suite (`tests/run` harness)
-docs/                # External-ready documentation (guide + gist)
-```
 
-## Development Workflow
-1. Make changes and keep metadata current in each command (`CMD_SUMMARY`, `CMD_OPTIONS`, etc.).
-2. Run `sh tests/run` (or `make test`) to exercise CLI behaviour and generator scenarios.
-3. Regenerate completions when option sets change: `bin/toolbox completion bash > completions/toolbox.bash`.
-4. Document changes in `docs/` and `AGENTS.md` so downstream projects stay aligned.
+## Capabilities
 
-## Installing Locally
-- `make install-user` → installs under `~/.local/opt/toolbox` and symlinks into `~/.local/bin`.
-- `sudo make install` → installs under `/opt/toolbox` with a `/usr/local/bin/toolbox` shim.
-- `make completions` → writes Bash/Zsh completion scripts to `./completions/`.
+| Area | Source | Actual role | Current verification |
+|---|---|---|---|
+| Dispatch | `bin/toolbox`,<br/>`lib/common.sh` | Resolves leaf and grouped command paths. | Version succeeds;<br/>command discovery is empty. |
+| Command metadata | `lib/cmd.sh`,<br/>command scripts | Renders usage, options, subcommands and examples. | Source-defined;<br/>test execution is blocked. |
+| New commands | `tools/new`,<br/>`templates/command/` | Copies and fills a leaf or group stub. | Group creation fails on macOS shell syntax. |
+| Project generation | `tools/generate`,<br/>`templates/project/` | Copies a skeleton,<br/>renames its dispatcher and creates manifest paths. | Scratch run stops at generated `lib/config.sh`. |
+| Completion | `tools/completion` | Emits shell completion from command metadata. | Positional handling and discovery block a useful run. |
+| Tests | `tests/run`,<br/>`tests/*.t` | Runs the TAP-style checks. | Current checkout exits `127`. |
 
-## Distribution Roadmap
-We want Toolbox.sh to be trivial to install on laptops, CI runners, and container images. Current ideas:
-- **make dist** produces `dist/toolbox-<version>.tar.gz` via `git archive`. Share signed tarballs per release.
-- **make deb** builds a Debian package (`dist/toolbox_<version>_all.deb`) using `packaging/deb/build.sh`.
-- **Signed tarball releases** published per tag (include `bin/`, `lib/`, `templates/`, `docs/`). Users download + `make install-user`.
-- **Homebrew tap** that stages the tarball and runs `make install`. Ideal for macOS contributors.
-- **Self-extracting installer** (`sh install-toolbox.sh`) that unpacks archives into `~/.local/opt` without root.
-- **OCI image** wrapping the generator for ephemeral CI jobs (`docker run ... manifest.json`).
-- **Package recipes (Deb/RPM/Nix)** to integrate with enterprise distributions once templates stabilize.
+## Measured results
 
-Interested contributors can pick one of these as a milestone; see `AGENTS.md` for ownership notes.
+The following values come from `python3 devtools/measure.py` on the checkout
+at `e4cd682`:
 
-## Documentation
-- [docs/GENERATOR_GUIDE.md](docs/GENERATOR_GUIDE.md) — copy-ready README describing the generator workflow.
-- [docs/GENERATOR_GIST.md](docs/GENERATOR_GIST.md) — condensed quickstart for sharing as a gist or snippet.
-- [AGENTS.md](AGENTS.md) — contributor playbook covering style, testing, and PR expectations.
+| Probe | Result |
+|---|---:|
+| tracked files | 48 |
+| tracked executable files | 0 |
+| `/bin/sh bin/toolbox --version` exit status | 0 |
+| discovered commands in `help` | 0 |
+| `./bin/toolbox --version` exit status | 126 |
+| `/bin/sh tests/run` exit status | 127 |
+| scratch generator exit status | 1 |
 
-## Troubleshooting
-- **Missing python3** → install via your package manager (`apt install python3`, `brew install python`).
-- **Manifest validation errors** → confirm the JSON array structure and ensure every group has a `commands` array.
-- **Permission issues** → prefer `make install-user` or run privileged commands with care.
+The scratch probe changes permissions only inside a temporary archive so it can
+reach the generator code. It does not change this checkout. Its command still
+stops at `templates/project/lib/config.sh`, which does not exist in the
+current tree.
 
-## Contributing
-Follow the guidelines in `AGENTS.md`: keep commits focused, ensure tests pass, update docs/templates when behaviour changes, and include reproduction commands in PR descriptions.
+## Repository layout
+
+| Path | Responsibility |
+|---|---|
+| `bin/toolbox` | Top-level dispatcher and global option handling. |
+| `lib/` | Shared shell libraries for resolution, logging, arguments, config and metadata. |
+| `tools/` | Built-in commands such as `generate`, `new`, `hello` and `completion`. |
+| `templates/command/` | Leaf, group and ignore-file templates. |
+| `templates/project/` | Files copied into a generated project. |
+| `tests/` | TAP-like shell tests and their harness. |
+| `docs/` | Component write-ups, measurements and the bug ledger. |
+| `devtools/measure.py` | Reproducible documentation-pass measurements. |
+
+## Known limitations
+
+- The tracked shell files are mode `100644`, so direct execution fails and the
+  dispatcher cannot discover executable commands.
+- `bin/toolbox` and `tools/new` use GNU `find -printf`; on the macOS shell the
+  directory listing becomes empty even after permissions are prepared.
+- The dispatcher consumes positional arguments while probing command paths. For
+  example, `hello Alice` does not pass `Alice` to the leaf command.
+- The generated project omits `lib/config.sh`, so its first generated command
+  cannot source its libraries. The template ignore rule also ignores a nested
+  `config.sh` path.
+- Nested generated commands calculate the project root from their immediate
+  directory and then source a nonexistent nested `lib/` directory.
+- `tools/new` contains a `case` branch inside a command substitution that the
+  macOS shell rejects before it can scaffold a group.
+- `_list_all_command_paths` uses non-POSIX `${value//old/new}` expansion. Under
+  `dash`, `__all_commands` reports `Bad substitution` and completion has no
+  usable command list.
+- The generated dispatcher keeps its help heredoc quoted, so its displayed
+  `${TOOLBOX_NAME}` and `${TOOLBOX_VERSION}` remain literal.
+
+Each item has a reproduction and a proposed, uncommitted fix in
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md). The documentation-only scope means
+the source remains unchanged.
+
+## Further documentation
+
+- [`docs/architecture.md`](docs/architecture.md) — dispatcher and scaffold structure.
+- [`docs/GENERATOR_GUIDE.md`](docs/GENERATOR_GUIDE.md) — manifest and generation lifecycle.
+- [`docs/commands.md`](docs/commands.md) — command metadata and conventions.
+- [`docs/measurement.md`](docs/measurement.md) — provenance for every published result.
+- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — verified defects and proposed diffs.
