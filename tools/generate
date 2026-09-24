@@ -17,8 +17,8 @@ _root=${_dir%/tools}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {
-  cat <<'__GEN_HELP__'
-Usage: ${TOOLBOX_NAME} generate --name NAME --manifest FILE [--dest DIR] [--force]
+  cat <<__GEN_HELP__
+Usage: ${PROG} generate --name NAME --manifest FILE [--dest DIR] [--force]
 
 Create a fresh project skeleton using templates/project. The manifest must be a
 JSON array describing commands, where each entry is either a string (leaf
@@ -95,8 +95,9 @@ PROJECT_TEMPLATE_DIR=${PROJECT_TEMPLATE_DIR:-"$TEMPLATE_DIR/project"}
 inf "Copying skeleton into %s" "$DEST"
 cp -R "$PROJECT_TEMPLATE_DIR/." "$DEST/"
 
-# Remove sample command/tests; manifest will define the actual ones
-rm -f "$DEST/tools/hello" "$DEST/tests/hello.t" 2>/dev/null || :
+# Remove the sample command and the tests that exercise this toolkit itself;
+# tests/commands.t for the manifest's commands is written below.
+rm -f "$DEST/tools/hello" "$DEST/tests/hello.t" "$DEST/tests/cli.t" "$DEST/tests/generate.t" 2>/dev/null || :
 
 # Rename dispatcher binary
 if [ -f "$DEST/bin/toolbox" ]; then
@@ -116,7 +117,8 @@ replacements = {
     root / 'lib' / 'common.sh': [('PROG=${TOOLBOX_NAME:-toolbox}', 'PROG=${TOOLBOX_NAME:-' + name + '}')],
     root / 'Makefile': [('PROG ?= toolbox', 'PROG ?= ' + name)],
     root / 'README.md': [('Toolbox.sh', name + '.sh')],
-    root / 'AGENTS.md': [('Toolbox.sh', name + '.sh')]
+    root / 'AGENTS.md': [('Toolbox.sh', name + '.sh')],
+    root / 'tests' / 'harness.sh': [('$_ROOT/bin/toolbox', '$_ROOT/bin/' + name)]
 }
 for path, rules in replacements.items():
     if not path.exists():
@@ -202,5 +204,35 @@ while IFS= read -r line; do
   [ -n "$line" ] || continue
   create_group "$line"
 done < "$_tmpdir/groups"
+
+# Starter tests for the generated commands: each is listed and its stub runs.
+{
+  n_leaves=$(grep -c . "$_tmpdir/leaves" || :)
+  n_groups=$(grep -c . "$_tmpdir/groups" || :)
+  cat <<'__T__'
+#!/bin/sh
+# Generated from the manifest. Replace the stub checks as commands get real
+# behaviour.
+set -eu
+. "$(dirname "$0")/harness.sh"
+
+__T__
+  printf 'plan %d\n\n' $((1 + n_groups + n_leaves * 4))
+  printf 'run_cmd H $TOOL help\nassert_match %s "$H_output" "help shows commands header"\n\n' "'Commands:'"
+  printf 'run_cmd A $TOOL __all_commands\n'
+  cat "$_tmpdir/groups" "$_tmpdir/leaves" | while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    printf 'assert_match %s "$A_output" "__all_commands lists %s"\n' "'^$p\$'" "$p"
+  done
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    printf '\nrun_cmd L $TOOL %s --help\n' "$p"
+    printf 'assert_eq 0 "$L_status" "%s --help exits 0"\n' "$p"
+    printf 'assert_match %s "$L_output" "%s --help shows usage"\n' "'^Usage: $NAME $p'" "$p"
+    printf 'run_cmd R $TOOL %s\nassert_eq 0 "$R_status" "%s runs"\n' "$p" "$p"
+  done < "$_tmpdir/leaves"
+  printf '\nfinish\n'
+} > "$DEST/tests/commands.t"
+chmod +x "$DEST/tests/commands.t"
 
 inf "Project '%s' generated at %s" "$NAME" "$DEST"

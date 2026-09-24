@@ -24,9 +24,9 @@ CMD_OPTIONS=$(cat <<'__HELLO_OPTS__'
 --loud||Shout the greeting in uppercase
 __HELLO_OPTS__
 )
-CMD_EXAMPLES=$(cat <<'__HELLO_EXAMPLES__'
-${TOOLBOX_NAME} hello
-${TOOLBOX_NAME} hello Alice --loud
+CMD_EXAMPLES=$(cat <<__HELLO_EXAMPLES__
+${PROG} hello
+${PROG} hello Alice --loud
 __HELLO_EXAMPLES__
 )
 

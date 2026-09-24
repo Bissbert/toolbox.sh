@@ -6,8 +6,8 @@ _this="$0"; _dir=${_this%/*}; _root=${_dir%/tools}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {
-  cat <<'__COMP_HELP__'
-Usage: ${TOOLBOX_NAME} completion [bash|zsh]
+  cat <<__COMP_HELP__
+Usage: ${PROG} completion [bash|zsh]
 
 Print a completion script for the given shell to stdout.
 __COMP_HELP__
