@@ -62,6 +62,12 @@ section "7. tools/new --group"
 ./bin/depot new --group demo 2>&1 | sed "s#$S#<scratch>#g"; echo "exit=$?"
 ./bin/depot help | sed -n "/Commands:/,/^\$/p"
 
+section "12. built-in help names the program"
+cd /tmp/tb
+./bin/toolbox new --help | head -1
+./bin/toolbox hello --help | tail -2
+$S/depot/bin/depot new --help | head -1
+
 section "tests/run under dash"
 cd /tmp/tb
 sh tests/run > /tmp/dash.log 2>&1; rc=$?
@@ -75,4 +81,5 @@ section "generated project: tests/run"
 cd $S/depot && sh tests/run > /tmp/gen.log 2>&1; rc=$?
 printf "exit=%s ok=%s not_ok=%s\n" $rc "$(grep -c "^ok " /tmp/gen.log)" "$(grep -c "^not ok " /tmp/gen.log)"
 grep "^not ok" /tmp/gen.log || true
+ls $S/depot/tests
 '

@@ -74,8 +74,8 @@ The intended workflow is:
 /bin/sh tests/run
 ```
 
-The dispatcher passes `report weekly` on to `tools/new` as its path (entry 5
-in [`BUGS-FOUND.md`](BUGS-FOUND.md), fixed in `c0ba03d`).
+The dispatcher passes `report weekly` on to `tools/new` as its path (fixed in
+[`c0ba03d`](https://github.com/Bissbert/toolbox.sh/commit/c0ba03d)).
 
 ## What the scaffold enforces
 
@@ -89,5 +89,7 @@ in [`BUGS-FOUND.md`](BUGS-FOUND.md), fixed in `c0ba03d`).
   records.
 
 These conventions make the tree inspectable. They also mean that a wrong file
-mode or a non-POSIX construct breaks every command at once, as entries 1 and 8
-in [`BUGS-FOUND.md`](BUGS-FOUND.md) did.
+mode or a non-POSIX construct breaks every command at once, as the missing
+executable bits and the non-POSIX substitution did before
+[`1709acf`](https://github.com/Bissbert/toolbox.sh/commit/1709acf) and
+[`fc4dabd`](https://github.com/Bissbert/toolbox.sh/commit/fc4dabd).
