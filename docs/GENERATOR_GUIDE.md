@@ -91,5 +91,5 @@ The generated project's `tests/` holds `harness.sh`, `run` and a
 `commands.t` written from the manifest. The harness targets `bin/<name>`, and
 `commands.t` checks `help`, that `__all_commands` lists every manifest path, and
 that each leaf's `--help` and stub exit `0`. For this manifest `sh tests/run`
-passes 10 of 10 (entry 11 in [`BUGS-FOUND.md`](BUGS-FOUND.md) records the
-earlier failure).
+passes 10 of 10 ([#5](https://github.com/Bissbert/toolbox.sh/issues/5)
+records the earlier failure).

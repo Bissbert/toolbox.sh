@@ -11,8 +11,8 @@ sh devtools/linux-run.sh > media/captures/linux-run.txt
 [`devtools/linux-run.sh`](../devtools/linux-run.sh) starts
 `python:3.12-slim-bookworm`, installs `git`, mounts the repository read-only
 and copies it with its history. It then runs
-[`devtools/measure.py`](../devtools/measure.py), a check for each entry in
-[Bugs found](BUGS-FOUND.md), the test suite under `dash` and `bash`, and the
+[`devtools/measure.py`](../devtools/measure.py), regression checks for
+previously fixed bugs, the test suite under `dash` and `bash`, and the
 test suite of a freshly generated project. The full output is
 [`media/captures/linux-run.txt`](../media/captures/linux-run.txt); every block
 below is taken from it.
@@ -82,7 +82,7 @@ of `HEAD`, so it does not depend on the modes in the working copy.
 | `sh bin/toolbox __all_commands` under `dash` | the same five commands, exit `0` |
 | `sh tests/run` (`dash`) | exit `0`, 55 ok, 0 not ok |
 | `bash tests/run` | exit `0`, 55 ok, 0 not ok |
-| `./bin/toolbox new --help` | `Usage: toolbox new [--group] <command> [subcommand ...]` ([entry 12](BUGS-FOUND.md)) |
+| `./bin/toolbox new --help` | `Usage: toolbox new [--group] <command> [subcommand ...]` ([#6](https://github.com/Bissbert/toolbox.sh/issues/6)) |
 | `./bin/toolbox hello --help` | `Examples:` / `toolbox hello`, `toolbox hello Alice --loud` |
 
 ## A generated project
@@ -108,7 +108,7 @@ exit=0
 | `./bin/depot report daily` | `depot: report daily is not implemented yet`, exit `0` |
 | `./bin/depot new --group demo` | `depot: created demo/__main`; `help` then lists `demo` |
 | `./bin/depot new --help` | `Usage: depot new [--group] <command> [subcommand ...]` |
-| `sh tests/run` | exit `0`, 10 ok, 0 not ok ([entry 11](BUGS-FOUND.md)) |
+| `sh tests/run` | exit `0`, 10 ok, 0 not ok ([#5](https://github.com/Bissbert/toolbox.sh/issues/5)) |
 
 `depot/tests/` holds `commands.t`, `harness.sh` and `run`. The harness targets
 `bin/depot`, and `commands.t` is written from the manifest: one check of
@@ -119,7 +119,10 @@ project got the template's `cli.t` and `generate.t`, which called
 
 ## Not covered
 
-- macOS. Entries 4 and 7 were macOS-only failures. The Linux run shows that
+- macOS. The `find -printf` and `tools/new` parse fixes
+  ([`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41),
+  [`c58633c`](https://github.com/Bissbert/toolbox.sh/commit/c58633c)) addressed
+  macOS-only failures. The Linux run shows that
   the new code works under `dash` and `bash`, but it does not re-run the macOS
   shell or BSD `find`.
 - `make install`, the Debian package in `packaging/deb/`, `self-update` and

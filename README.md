@@ -116,7 +116,7 @@ Details are in [`docs/measurement.md`](docs/measurement.md).
 | `templates/command/` | Leaf, group and ignore-file templates. |
 | `templates/project/` | Files copied into a generated project. |
 | `tests/` | TAP-like shell tests and their harness. |
-| `docs/` | Component write-ups, measurements and the bug ledger. |
+| `docs/` | Component write-ups, measurements and the Linux run. |
 | `devtools/` | `measure.py` probe and the `linux-run.sh` container run. |
 
 ## Known limitations
@@ -125,19 +125,18 @@ Details are in [`docs/measurement.md`](docs/measurement.md).
   syntax in a command file will not be caught by the framework.
 - `tests/run` is a TAP-style harness with no external dependencies; it exercises
   the dispatcher, `tools/new` and the generator (including the generated
-  project's own suite), and `tests/regressions.t` holds one check per entry in
-  the bug ledger. `sh tests/docker.sh` runs it in a Debian container. It is not
+  project's own suite), and `tests/regressions.t` holds regression checks for
+  previously fixed bugs. `sh tests/docker.sh` runs it in a Debian container. It is not
   a matrix of shells or platforms.
 - The generator writes a skeleton from a fixed template set. A project that
   needs a different layout has to diverge from the template after generation.
-- The checks run on Linux only. The two macOS-specific fixes (entries 4 and 7
-  in [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md)) were not re-run on macOS.
+- The checks run on Linux only. The two macOS-specific fixes
+  ([`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41) and
+  [`c58633c`](https://github.com/Bissbert/toolbox.sh/commit/c58633c)) were not
+  re-run on macOS.
 
-Twelve bugs are fixed, among them the missing executable bits, the
-generated project's missing `lib/config.sh`, dropped positional arguments, the
-non-POSIX substitution under `dash` and the generated project's failing tests.
-See
-[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
+Bugs are tracked as
+[GitHub issues](https://github.com/Bissbert/toolbox.sh/issues).
 
 ## Further documentation
 
@@ -145,4 +144,3 @@ See
 - [`docs/GENERATOR_GUIDE.md`](docs/GENERATOR_GUIDE.md) — manifest and generation lifecycle.
 - [`docs/commands.md`](docs/commands.md) — command metadata and conventions.
 - [`docs/measurement.md`](docs/measurement.md) — the Linux run behind every result.
-- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — twelve fixed bugs.

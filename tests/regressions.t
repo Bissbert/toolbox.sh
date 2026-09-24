@@ -1,6 +1,7 @@
 #!/bin/sh
-# One check per fixed entry in docs/BUGS-FOUND.md (entries 1-10; 11 is in
-# generated.t), and entry 12.
+# Regression checks for previously fixed bugs. The numbers label each bug;
+# the generated project's own suite (issue #5) is in generated.t, and check 12
+# covers issue #6.
 set -eu
 . "$(dirname "$0")/harness.sh"
 

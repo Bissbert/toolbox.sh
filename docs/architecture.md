@@ -53,8 +53,9 @@ sequenceDiagram
 
 Discovery accepts only executable files, and lists them with shell globs and a
 locale-stable sort, skipping hidden entries and `__main`. Earlier versions
-tracked no executable files and used GNU `find -printf`; both are fixed (entries
-1 and 4 in [`BUGS-FOUND.md`](BUGS-FOUND.md)).
+tracked no executable files and used GNU `find -printf`; both are fixed
+([`1709acf`](https://github.com/Bissbert/toolbox.sh/commit/1709acf),
+[`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41)).
 
 ## Generated project shape
 

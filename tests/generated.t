@@ -1,5 +1,5 @@
 #!/bin/sh
-# A generated project must pass its own test suite (entry 11), and the
+# A generated project must pass its own test suite (issue #5), and the
 # generator must reject bad input.
 set -eu
 . "$(dirname "$0")/harness.sh"
