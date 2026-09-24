@@ -87,7 +87,9 @@ exits `0` and creates `status`, `report/__main` and `report/daily`.
 `./bin/depot help` lists them under the project's own name and version, and
 `./bin/depot report daily` runs.
 
-The generated project's `tests/run` fails all 14 assertions. The copied tests
-still call `bin/toolbox` and expect `hello` and `generate`, which the generator
-removes or does not copy. This is open entry 11 in
-[`BUGS-FOUND.md`](BUGS-FOUND.md).
+The generated project's `tests/` holds `harness.sh`, `run` and a
+`commands.t` written from the manifest. The harness targets `bin/<name>`, and
+`commands.t` checks `help`, that `__all_commands` lists every manifest path, and
+that each leaf's `--help` and stub exit `0`. For this manifest `sh tests/run`
+passes 10 of 10 (entry 11 in [`BUGS-FOUND.md`](BUGS-FOUND.md) records the
+earlier failure).

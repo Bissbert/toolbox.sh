@@ -3,8 +3,9 @@
 # Bugs found
 
 Entries 1–10 were reproduced on the checkout at `e4cd682` and are fixed on
-`main`. Entry 11 turned up when everything was re-run in a Linux container and
-is open. The checks quoted below come from that run; see
+`main`. Entry 11 turned up when everything was re-run in a Linux container, and
+entry 12 while writing its tests; both are fixed on `fix/open-bugs`. The checks
+quoted below come from the Linux run; see
 [How this was measured](measurement.md).
 
 | # | Entry | Status |
@@ -19,7 +20,8 @@ is open. The checks quoted below come from that run; see
 | 8 | `_list_all_command_paths` uses a non-POSIX substitution | Fixed in [`fc4dabd`](https://github.com/Bissbert/toolbox.sh/commit/fc4dabd) |
 | 9 | Generated help keeps variable references literal | Fixed in [`6715cf4`](https://github.com/Bissbert/toolbox.sh/commit/6715cf4) |
 | 10 | Generated command examples keep `${TOOLBOX_NAME}` literal | Fixed in [`272de6b`](https://github.com/Bissbert/toolbox.sh/commit/272de6b) |
-| 11 | A generated project's own tests target the template | Open |
+| 11 | A generated project's own tests target the template | Fixed in [`2a00d08`](https://github.com/Bissbert/toolbox.sh/commit/2a00d08) ([#5](https://github.com/Bissbert/toolbox.sh/issues/5)) |
+| 12 | Built-in command help prints `${TOOLBOX_NAME}` literally | Fixed in [`2a00d08`](https://github.com/Bissbert/toolbox.sh/commit/2a00d08) ([#6](https://github.com/Bissbert/toolbox.sh/issues/6)) |
 
 ## 1. Tracked scripts have no executable bit
 
@@ -34,7 +36,8 @@ accepts executable files.
 **What changed:** those files are tracked as `100755`; sourced libraries stay
 `100644`.
 
-**Check:** `git ls-files -s` counts 21 files with mode `100755`, and
+**Check:** `git ls-files -s` counts 26 files with mode `100755` (the 21 entry
+points plus `devtools/linux-run.sh` and four test files added since), and
 `./bin/toolbox --version` prints `toolbox 0.1.0` with exit `0`.
 
 ## 2. The generated project has no `lib/config.sh`
@@ -170,23 +173,15 @@ name.
 
 ## 11. A generated project's own tests target the template
 
-**Status:** open. Found in the Linux run.
+**Status:** fixed in [`2a00d08`](https://github.com/Bissbert/toolbox.sh/commit/2a00d08) ([#5](https://github.com/Bissbert/toolbox.sh/issues/5)).
+Found in the Linux run.
 
-**Files:** `templates/project/tests/cli.t`, `templates/project/tests/generate.t`,
-`templates/project/tests/harness.sh:13`, `tools/generate:99`
-
-**What happens:** the generator copies `templates/project/tests/` into the new
-project, renames `bin/toolbox` to `bin/<name>`, and deletes `tools/hello` and
-`tests/hello.t`. The two remaining test files still run `$_ROOT/bin/toolbox`
-(the harness default), and expect `hello` and `generate` commands, which a
-generated project does not have. `tests/run` in a fresh project therefore fails
-every assertion.
-
-**Reproduce:** generate `depot` as in the README, then:
-
-```sh
-cd depot && sh tests/run
-```
+**What happened:** the generator copied `templates/project/tests/` into the
+new project, renamed `bin/toolbox` to `bin/<name>`, and deleted
+`tools/hello` and `tests/hello.t`. The two remaining test files still ran
+`$_ROOT/bin/toolbox` (the harness default) and expected `hello` and
+`generate` commands, which a generated project does not have. `tests/run` in
+a fresh project failed every assertion:
 
 ```text
 not ok 1 - help shows commands header
@@ -195,8 +190,38 @@ not ok 1 - help shows commands header
     got:     sh: 0: cannot open <scratch>/depot/bin/toolbox: No such file
 ```
 
-The run ends with `exit=1 ok=0 not_ok=14`.
+The run ended with `exit=1 ok=0 not_ok=14`.
 
-**Possible fix:** have the generator set the harness's default `TOOL` to
-`bin/<name>` and drop or rewrite the `hello` and `generate` assertions, or
-ship a smaller test file that only checks `help` and the manifest's commands.
+**What changed:** `tools/generate` no longer copies `cli.t` and
+`generate.t`, points the harness at `bin/<name>`, and writes
+`tests/commands.t` from the manifest. That file checks `help`, that
+`__all_commands` lists every manifest path, and that each leaf's `--help`
+and stub run exit `0`. `tests/generated.t` covers this in the top-level
+suite.
+
+**Check:** in the generated `depot`, `sh tests/run` ends with
+`exit=0 ok=10 not_ok=0`, and `depot/tests/` holds `commands.t`,
+`harness.sh` and `run`.
+
+## 12. Built-in command help prints `${TOOLBOX_NAME}` literally
+
+**Status:** fixed in [`2a00d08`](https://github.com/Bissbert/toolbox.sh/commit/2a00d08) ([#6](https://github.com/Bissbert/toolbox.sh/issues/6)).
+Found while writing the tests for entry 11.
+
+**What happened:** `tools/new`, `tools/completion`, `tools/hello` and
+`tools/generate`, and the copies under `templates/project/tools/`, printed
+their help from quoted heredocs. `toolbox new --help` showed
+`Usage: ${TOOLBOX_NAME} new ...`, and a generated project's `new --help` did
+the same instead of naming the project.
+
+**What changed:** those heredocs are unquoted and use `${PROG}`, which
+`lib/common.sh` always sets, so a tool run directly does not trip `set -u`.
+
+**Check:**
+
+```text
+Usage: toolbox new [--group] <command> [subcommand ...]
+  toolbox hello
+  toolbox hello Alice --loud
+Usage: depot new [--group] <command> [subcommand ...]
+```

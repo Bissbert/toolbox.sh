@@ -40,6 +40,5 @@ test under `tests/`.
 
 The sequence runs end to end in the Linux container described in
 [`measurement.md`](measurement.md). The generated project's own `tests/run`
-fails, because the copied tests still target the template (open entry 11 in
-[`BUGS-FOUND.md`](BUGS-FOUND.md)); add your tests alongside them or replace
-them.
+passes: the generator writes `tests/commands.t` from the manifest (entry 11 in
+[`BUGS-FOUND.md`](BUGS-FOUND.md)). Add your tests alongside it.

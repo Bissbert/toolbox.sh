@@ -51,8 +51,8 @@ cd depot
 
 The sequence completes, and `/bin/sh bin/depot help` lists the generated
 `report` and `status` commands with the project's own name and version in the
-help text. The generated project's own `tests/run` fails; see
-[Known limitations](#known-limitations).
+help text. `sh tests/run` inside `depot` runs the generated
+`tests/commands.t`, which checks every command in the manifest and passes.
 
 ## Architecture
 
@@ -85,24 +85,24 @@ flowchart TD
 | Dispatch | `bin/toolbox`,<br/>`lib/common.sh` | Resolves leaf and grouped command paths. | `help` lists five commands;<br/>`hello Alice` gets its argument. |
 | Command metadata | `lib/cmd.sh`,<br/>command scripts | Renders usage, options, subcommands and examples. | `depot report daily --help` renders<br/>with the project name. |
 | New commands | `tools/new`,<br/>`templates/command/` | Copies and fills a leaf or group stub. | `new --group demo` creates `demo/__main`. |
-| Project generation | `tools/generate`,<br/>`templates/project/` | Copies a skeleton,<br/>renames its dispatcher and creates manifest paths. | Exits `0`; nested `report daily` runs.<br/>Its copied tests fail (open bug 11). |
+| Project generation | `tools/generate`,<br/>`templates/project/` | Copies a skeleton,<br/>renames its dispatcher and creates manifest paths. | Exits `0`; nested `report daily` runs.<br/>Its generated tests pass 10/10. |
 | Completion | `tools/completion` | Emits shell completion from command metadata. | `__all_commands` works under `dash`;<br/>not installed into a shell. |
-| Tests | `tests/run`,<br/>`tests/*.t` | Runs the TAP-style checks. | 20/20 under `dash` and `bash`. |
+| Tests | `tests/run`,<br/>`tests/*.t` | Runs the TAP-style checks. | 55/55 under `dash` and `bash`. |
 
 ## Results
 
 These values come from `devtools/linux-run.sh` in `python:3.12-slim-bookworm`,
-where `/bin/sh` is `dash`, at commit `a8861f0`:
+where `/bin/sh` is `dash`, at commit `4b13dec`:
 
 | Check | Result |
 |---|---:|
-| tracked files | 55 |
-| tracked executable files | 21 |
+| tracked files | 61 |
+| tracked executable files | 26 |
 | `./bin/toolbox --version` exit status | 0 |
 | discovered commands in `help` | 5 |
-| `tests/run` under `dash` / `bash` | 20 / 20 passed, exit 0 |
+| `tests/run` under `dash` / `bash` | 55 / 55 passed, exit 0 |
 | generator exit status | 0 |
-| generated project `tests/run` | 0 / 14 passed, exit 1 |
+| generated project `tests/run` | 10 / 10 passed, exit 0 |
 
 Details are in [`docs/measurement.md`](docs/measurement.md).
 
@@ -124,18 +124,19 @@ Details are in [`docs/measurement.md`](docs/measurement.md).
 - The dispatcher and the generated projects target POSIX `sh`. Bash-specific
   syntax in a command file will not be caught by the framework.
 - `tests/run` is a TAP-style harness with no external dependencies; it exercises
-  the dispatcher and the generator, not a matrix of shells or platforms.
+  the dispatcher, `tools/new` and the generator (including the generated
+  project's own suite), and `tests/regressions.t` holds one check per entry in
+  the bug ledger. `sh tests/docker.sh` runs it in a Debian container. It is not
+  a matrix of shells or platforms.
 - The generator writes a skeleton from a fixed template set. A project that
   needs a different layout has to diverge from the template after generation.
-- Open bug 11: a generated project's `tests/run` fails all 14 assertions,
-  because the copied tests still call `bin/toolbox` and expect the `hello` and
-  `generate` commands.
 - The checks run on Linux only. The two macOS-specific fixes (entries 4 and 7
   in [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md)) were not re-run on macOS.
 
-Ten earlier bugs are fixed, among them the missing executable bits, the
-generated project's missing `lib/config.sh`, dropped positional arguments and
-the non-POSIX substitution under `dash`. See
+Twelve bugs are fixed, among them the missing executable bits, the
+generated project's missing `lib/config.sh`, dropped positional arguments, the
+non-POSIX substitution under `dash` and the generated project's failing tests.
+See
 [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
 
 ## Further documentation
@@ -144,4 +145,4 @@ the non-POSIX substitution under `dash`. See
 - [`docs/GENERATOR_GUIDE.md`](docs/GENERATOR_GUIDE.md) — manifest and generation lifecycle.
 - [`docs/commands.md`](docs/commands.md) — command metadata and conventions.
 - [`docs/measurement.md`](docs/measurement.md) — the Linux run behind every result.
-- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — ten fixed bugs and one open one.
+- [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) — twelve fixed bugs.
