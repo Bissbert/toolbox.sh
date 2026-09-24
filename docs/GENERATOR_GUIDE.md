@@ -73,9 +73,7 @@ creates the directory and its `__main` file. The templates expect the command
 to source the libraries relative to the project root and to keep metadata
 close to the implementation.
 
-## Current checkout behavior
-
-The source-level sequence is copy-pasteable:
+## Running it
 
 ```sh
 cat >manifest.json <<'JSON'
@@ -84,14 +82,12 @@ JSON
 /bin/sh bin/toolbox generate --name depot --manifest manifest.json --dest ./depot
 ```
 
-It is not a successful quick start on the current revision. Direct invocation
-was blocked by tracked file modes; after permissions were prepared inside a
-scratch archive, the generator copied its skeleton and then `tools/new` could
-not source `depot/lib/config.sh`. That failure was observed by
-`devtools/measure.py`, and no successful generated-project transcript was
-claimed at the time.
+In the Linux container described in [`measurement.md`](measurement.md) this
+exits `0` and creates `status`, `report/__main` and `report/daily`.
+`./bin/depot help` lists them under the project's own name and version, and
+`./bin/depot report daily` runs.
 
-The missing library, the ignore rule and the related dispatcher defects have
-since been fixed on the default branch, where the same probe runs to
-completion. Their reproductions and diffs are collected in
+The generated project's `tests/run` fails all 14 assertions. The copied tests
+still call `bin/toolbox` and expect `hello` and `generate`, which the generator
+removes or does not copy. This is open entry 11 in
 [`BUGS-FOUND.md`](BUGS-FOUND.md).

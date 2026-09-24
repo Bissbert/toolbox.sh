@@ -1,0 +1,163 @@
+
+=== environment
+Linux 6.5.11-linuxkit aarch64
+/bin/sh -> /usr/bin/dash
+GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
+git version 2.39.5
+Python 3.12.14
+commit a8861f0
+
+=== python3 devtools/measure.py
+/tmp/tb/devtools/measure.py:71: DeprecationWarning: Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata. Use the filter argument to control this behavior.
+  tar.extractall(root)
+source_base	a8861f0
+tracked_files	55
+tracked_executable_files	21
+version_rc	0
+version_output	toolbox 0.1.0
+help_rc	0
+help_commands	5
+direct_version_rc	0
+direct_version_output	toolbox 0.1.0
+tests_rc	0
+tests_ok	20
+tests_not_ok	0
+config_ignore_rc	1
+config_ignore_output	
+scratch_help_rc	0
+scratch_help_commands	5
+scratch_hello_rc	0
+scratch_hello_output	toolbox: Hello, Alice!
+scratch_generate_rc	0
+scratch_generate_output	toolbox: Copying skeleton into <scratch>/depot\ndepot: created status\ntoolbox: Project 'depot' generated at <scratch>/depot
+
+=== 1. tracked modes and direct execution
+     34 100644
+     21 100755
+toolbox 0.1.0
+exit=0
+
+=== 3. ignore rule for templates/project/lib/config.sh
+exit=1 (1 = not ignored)
+
+=== 4. command discovery (help)
+toolbox 0.1.0
+
+Usage: toolbox [global-options] <command> [args]
+
+Global options:
+  -h, --help         Show this help
+  -V, --version      Show version
+  --no-color         Disable colored output
+  --log-level LVL    Set log level (debug,info,warn,error)
+  --config FILE      Use specific config file
+
+Commands:
+  completion
+  generate
+  hello
+  new
+  self-update
+
+  Help:
+  toolbox help [command]
+exit=0
+
+=== 5. positional arguments reach the leaf
+toolbox: Hello, Alice!
+exit=0
+
+=== 8. __all_commands under dash
+completion
+generate
+hello
+new
+self-update
+exit=0
+
+=== 2, 6, 9, 10. generate a project with a nested command
+toolbox: Copying skeleton into <scratch>/depot
+depot: created status
+depot: created report/daily
+depot: created report/__main
+toolbox: Project 'depot' generated at <scratch>/depot
+exit=0
+args.sh
+cmd.sh
+common.sh
+config.sh
+log.sh
+--- bin/depot help
+depot 0.1.0
+
+Usage: depot [global-options] <command> [args]
+
+Global options:
+  -h, --help         Show this help
+  -V, --version      Show version
+  --no-color         Disable colored output
+  --log-level LVL    Set log level (debug,info,warn,error)
+  --config FILE      Use specific config file
+
+Commands:
+  completion
+  new
+  report
+  self-update
+  status
+
+  Help:
+  depot help [command]
+exit=0
+--- bin/depot report daily --help
+Usage: depot report daily [options]
+
+Describe what report daily does
+
+Explain the behaviour of report daily here.
+
+Options:
+  -h, --help
+      Show help information
+
+Examples:
+  depot report daily
+exit=0
+--- bin/depot report daily
+depot: report daily is not implemented yet
+exit=0
+
+=== 7. tools/new --group
+depot: created demo/__main
+exit=0
+Commands:
+  completion
+  demo
+  new
+  report
+  self-update
+  status
+
+
+=== tests/run under dash
+exit=0 ok=20 not_ok=0
+
+=== tests/run under bash
+exit=0 ok=20 not_ok=0
+
+=== generated project: tests/run
+exit=1 ok=0 not_ok=14
+not ok 1 - help shows commands header
+not ok 2 - help lists hello
+not ok 3 - __commands includes hello
+not ok 4 - __commands includes generate
+not ok 5 - metadata exposes command name
+not ok 6 - metadata exposes loud option
+not ok 1 - generator exits cleanly
+not ok 2 - generator reports success
+not ok 3 - binary renamed
+not ok 4 - leaf command scaffolded
+not ok 5 - nested leaf scaffolded
+not ok 6 - group command created
+not ok 7 - release lists plan
+not ok 8 - release lists deploy

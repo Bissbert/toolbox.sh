@@ -74,12 +74,8 @@ The intended workflow is:
 /bin/sh tests/run
 ```
 
-At the time of this pass the dispatcher consumed `report` and `weekly` while
-probing the command path and then passed no positional arguments to
-`tools/new`, so in a permissions-prepared scratch copy the command failed as an
-unknown command path instead of creating the leaf. That defect has since been
-fixed on the default branch; the reproduction and the applied diff are in
-[`BUGS-FOUND.md`](BUGS-FOUND.md).
+The dispatcher passes `report weekly` on to `tools/new` as its path (entry 5
+in [`BUGS-FOUND.md`](BUGS-FOUND.md), fixed in `c0ba03d`).
 
 ## What the scaffold enforces
 
@@ -92,7 +88,6 @@ fixed on the default branch; the reproduction and the applied diff are in
 - The test harness expects shell scripts and emits TAP-like `ok` and `not ok`
   records.
 
-These conventions make the tree inspectable, but they also explain why the file
-mode and shell-compatibility defects recorded in this pass had such a wide blast
-radius. See [`measurement.md`](measurement.md) for the commands used to observe
-them.
+These conventions make the tree inspectable. They also mean that a wrong file
+mode or a non-POSIX construct breaks every command at once, as entries 1 and 8
+in [`BUGS-FOUND.md`](BUGS-FOUND.md) did.

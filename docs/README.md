@@ -1,10 +1,9 @@
 # Documentation
 
 The write-ups show the filesystem-driven architecture, generator lifecycle and
-command contract. [`BUGS-FOUND.md`](BUGS-FOUND.md) records the source defects
-this pass found, all of which have since been fixed;
-[`measurement.md`](measurement.md) is the provenance for every result in the
-overview.
+command contract. [`BUGS-FOUND.md`](BUGS-FOUND.md) lists ten fixed bugs and one
+open one; [`measurement.md`](measurement.md) describes the Linux run behind
+every result in the overview.
 
 | Write-up | Focus |
 |---|---|

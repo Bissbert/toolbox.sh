@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure the reverted toolbox.sh checkout without changing it.
+"""Measure the toolbox.sh checkout without changing it.
 
 The scratch probe uses a git archive and changes only permissions inside that
 temporary copy. This isolates source behaviour from the checkout's tracked

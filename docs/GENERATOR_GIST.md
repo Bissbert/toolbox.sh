@@ -38,8 +38,8 @@ After generation, edit the command file and replace its `CMD_*` placeholders.
 Use `--help` to inspect the metadata that the command exposes, then add a TAP
 test under `tests/`.
 
-The checkout this documentation pass described could not complete the sequence:
-the executable-bit, missing-library and dispatcher defects are measured in
-[`measurement.md`](measurement.md) and listed in
-[`BUGS-FOUND.md`](BUGS-FOUND.md). All of them have since been fixed on the
-default branch, where the sequence runs end to end.
+The sequence runs end to end in the Linux container described in
+[`measurement.md`](measurement.md). The generated project's own `tests/run`
+fails, because the copied tests still target the template (open entry 11 in
+[`BUGS-FOUND.md`](BUGS-FOUND.md)); add your tests alongside them or replace
+them.

@@ -1,529 +1,202 @@
 [← back to the overview](../README.md)
 
-# Bugs found during the documentation pass
+# Bugs found
 
-This file records defects in the reverted checkout at `e4cd682`. No source fix
-described here was applied during the documentation pass itself. The first
-saved patch contains fixes proposed during the interrupted pass; the second
-contains the dropped `b5f6e4d` source commit. Reproductions below were run
-against that checkout or a temporary copy when runtime permissions were needed.
+Entries 1–10 were reproduced on the checkout at `e4cd682` and are fixed on
+`main`. Entry 11 turned up when everything was re-run in a Linux container and
+is open. The checks quoted below come from that run; see
+[How this was measured](measurement.md).
 
-> **Since this pass:** an independent adjudication confirmed all ten entries,
-> and a subsequent fix pass applied all ten to the default branch, in commits
-> `1709acf`, `5d89519`, `3e96df1`, `6b1fe41`, `c0ba03d`, `ed519f9`, `c58633c`,
-> `fc4dabd`, `6715cf4` and `272de6b`, in the order the entries appear below.
-> Re-running `python3 devtools/measure.py` on the fixed tree reports 21
-> executable tracked files, five discovered commands, a `tests/run` exit status
-> of `0` with 20 of 20 TAP assertions passing, and a generator probe that runs
-> to completion. Read the reproductions and diffs below as the state at the
-> time of the pass, not as the current state of the default branch.
+| # | Entry | Status |
+|---|---|---|
+| 1 | Tracked scripts have no executable bit | Fixed in [`1709acf`](https://github.com/Bissbert/toolbox.sh/commit/1709acf) |
+| 2 | The generated project has no `lib/config.sh` | Fixed in [`5d89519`](https://github.com/Bissbert/toolbox.sh/commit/5d89519) |
+| 3 | The template ignore rule hides nested `config.sh` | Fixed in [`3e96df1`](https://github.com/Bissbert/toolbox.sh/commit/3e96df1) |
+| 4 | GNU `find -printf` breaks discovery on macOS | Fixed in [`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41) |
+| 5 | The dispatcher drops positional arguments | Fixed in [`c0ba03d`](https://github.com/Bissbert/toolbox.sh/commit/c0ba03d) |
+| 6 | Nested generated commands source the wrong root | Fixed in [`ed519f9`](https://github.com/Bissbert/toolbox.sh/commit/ed519f9) |
+| 7 | `tools/new` has a macOS parse error in its command substitution | Fixed in [`c58633c`](https://github.com/Bissbert/toolbox.sh/commit/c58633c) |
+| 8 | `_list_all_command_paths` uses a non-POSIX substitution | Fixed in [`fc4dabd`](https://github.com/Bissbert/toolbox.sh/commit/fc4dabd) |
+| 9 | Generated help keeps variable references literal | Fixed in [`6715cf4`](https://github.com/Bissbert/toolbox.sh/commit/6715cf4) |
+| 10 | Generated command examples keep `${TOOLBOX_NAME}` literal | Fixed in [`272de6b`](https://github.com/Bissbert/toolbox.sh/commit/272de6b) |
+| 11 | A generated project's own tests target the template | Open |
 
-```mermaid
-flowchart TD
-    A["fresh checkout"] --> B["tracked scripts are not executable"]
-    B --> C["dispatcher lists no commands"]
-    C --> D["generator cannot be reached normally"]
-    D --> E["scratch permissions expose template defects"]
-    E --> F["missing config library"]
-    E --> G["nested root and argument defects"]
-    E --> H["shell portability defects"]
+## 1. Tracked scripts have no executable bit
 
-    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
-    style E fill:#9e6a03,stroke:#d29922,color:#fff
-    style F fill:#da3633,stroke:#f85149,color:#fff
-    style G fill:#da3633,stroke:#f85149,color:#fff
-    style H fill:#da3633,stroke:#f85149,color:#fff
-```
+**Status:** fixed in [`1709acf`](https://github.com/Bissbert/toolbox.sh/commit/1709acf).
 
-## Tracked scripts have no executable bit
+**What happened:** 21 entry points (`bin/toolbox`, everything in `tools/` and
+`tests/`, the packaging scripts and their copies under `templates/project/`)
+were tracked as `100644`. `./bin/toolbox --version` failed with status `126`,
+and `/bin/sh bin/toolbox help` listed no commands, because discovery only
+accepts executable files.
 
-**Location:** file-mode metadata for these tracked files:
+**What changed:** those files are tracked as `100755`; sourced libraries stay
+`100644`.
 
-```text
-bin/toolbox
-packaging/deb/build.sh
-packaging/deb/toolbox-wrapper.sh
-templates/project/bin/toolbox
-templates/project/tests/cli.t
-templates/project/tests/generate.t
-templates/project/tests/hello.t
-templates/project/tests/run
-templates/project/tools/completion
-templates/project/tools/hello
-templates/project/tools/new
-templates/project/tools/self-update
-tests/cli.t
-tests/generate.t
-tests/hello.t
-tests/run
-tools/completion
-tools/generate
-tools/hello
-tools/new
-tools/self-update
-```
+**Check:** `git ls-files -s` counts 21 files with mode `100755`, and
+`./bin/toolbox --version` prints `toolbox 0.1.0` with exit `0`.
 
-**What happens:** `git ls-files -s` reports mode `100644` for every file in
-that list. Direct execution of `./bin/toolbox --version` returns permission
-denied with status `126`. Invoked as `/bin/sh bin/toolbox`, the dispatcher runs
-but its executable-file discovery finds no commands.
+## 2. The generated project has no `lib/config.sh`
 
-**Reproduce:**
+**Status:** fixed in [`5d89519`](https://github.com/Bissbert/toolbox.sh/commit/5d89519).
 
-```sh
-git ls-files -s bin/toolbox tools/new tests/run
-./bin/toolbox --version
-```
-
-The proposed fix from the dropped commit is only a mode change:
-
-```diff
-diff --git a/bin/toolbox b/bin/toolbox
-old mode 100644
-new mode 100755
-diff --git a/packaging/deb/build.sh b/packaging/deb/build.sh
-old mode 100644
-new mode 100755
-diff --git a/packaging/deb/toolbox-wrapper.sh b/packaging/deb/toolbox-wrapper.sh
-old mode 100644
-new mode 100755
-diff --git a/templates/project/bin/toolbox b/templates/project/bin/toolbox
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tests/cli.t b/templates/project/tests/cli.t
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tests/generate.t b/templates/project/tests/generate.t
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tests/hello.t b/templates/project/tests/hello.t
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tests/run b/templates/project/tests/run
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tools/completion b/templates/project/tools/completion
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tools/hello b/templates/project/tools/hello
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tools/new b/templates/project/tools/new
-old mode 100644
-new mode 100755
-diff --git a/templates/project/tools/self-update b/templates/project/tools/self-update
-old mode 100644
-new mode 100755
-diff --git a/tests/cli.t b/tests/cli.t
-old mode 100644
-new mode 100755
-diff --git a/tests/generate.t b/tests/generate.t
-old mode 100644
-new mode 100755
-diff --git a/tests/hello.t b/tests/hello.t
-old mode 100644
-new mode 100755
-diff --git a/tests/run b/tests/run
-old mode 100644
-new mode 100755
-diff --git a/tools/completion b/tools/completion
-old mode 100644
-new mode 100755
-diff --git a/tools/generate b/tools/generate
-old mode 100644
-new mode 100755
-diff --git a/tools/hello b/tools/hello
-old mode 100644
-new mode 100755
-diff --git a/tools/new b/tools/new
-old mode 100644
-new mode 100755
-diff --git a/tools/self-update b/tools/self-update
-old mode 100644
-new mode 100755
-```
-
-## The generated project has no `lib/config.sh`
-
-**Location:** `templates/project/lib/config.sh` is absent; generated
-`tools/new` tries to source it at `templates/project/tools/new:17`.
-
-**What happens:** generation copies the skeleton, then fails when the first
-generated command invokes `tools/new`:
+**What happened:** `templates/project/lib/config.sh` did not exist, but the
+generated `tools/new` sources it. Generation copied the skeleton and then
+stopped:
 
 ```text
-toolbox: Copying skeleton into <scratch>/depot
 <scratch>/depot/tools/new: line 17: <scratch>/depot/lib/config.sh: No such file or directory
 ```
 
-**Reproduce:** run `python3 devtools/measure.py`. Its scratch probe archives
-the current `HEAD`, prepares permissions only in that archive, and runs the
-real generator. The failure above is its recorded output. This is verified.
+**What changed:** `templates/project/lib/config.sh` was added, matching the
+top-level `lib/config.sh`.
 
-The proposed fix is the file addition from the dropped commit. It copies the
-same XDG/config implementation used by the top-level `lib/config.sh`:
+**Check:** generating `depot` from a manifest with `status` and a `report`
+group exits `0`, and `depot/lib/` contains `config.sh`.
 
-```diff
-diff --git a/templates/project/lib/config.sh b/templates/project/lib/config.sh
-new file mode 100644
---- /dev/null
-+++ b/templates/project/lib/config.sh
-@@
-+#!/bin/sh
-+set -eu
-+
-+# Determine XDG paths with fallbacks
-+_xdg_home() {
-+  var=$1; def=$2
-+  eval v="\${$var-}"
-+  [ -n "${v:-}" ] && { printf '%s\n' "$v"; return; }
-+  printf '%s\n' "$def"
-+}
-+
-+XDG_CONFIG_HOME=$(_xdg_home XDG_CONFIG_HOME "$HOME/.config")
-+XDG_DATA_HOME=$(_xdg_home XDG_DATA_HOME "$HOME/.local/share")
-+XDG_CACHE_HOME=$(_xdg_home XDG_CACHE_HOME "$HOME/.cache")
-+
-+TOOLBOX_CONFIG_DIR=${TOOLBOX_CONFIG_DIR:-"$XDG_CONFIG_HOME/$TOOLBOX_NAME"}
-+TOOLBOX_DATA_DIR=${TOOLBOX_DATA_DIR:-"$XDG_DATA_HOME/$TOOLBOX_NAME"}
-+TOOLBOX_CACHE_DIR=${TOOLBOX_CACHE_DIR:-"$XDG_CACHE_HOME/$TOOLBOX_NAME"}
-+
-+mkdir_p() { [ -d "$1" ] || mkdir -p "$1"; }
-+
-+load_config() {
-+  local file=${1:-}
-+  if [ -n "$file" ]; then
-+    [ -f "$file" ] && . "$file" || {
-+      printf 'config not found: %s\n' "$file" >&2
-+      exit 2
-+    }
-+    return 0
-+  fi
-+  local def="$TOOLBOX_CONFIG_DIR/config"
-+  if [ -f "$def" ]; then . "$def"; fi
-+}
-+
-+ensure_dirs() {
-+  for d in "$TOOLBOX_CONFIG_DIR" "$TOOLBOX_DATA_DIR" "$TOOLBOX_CACHE_DIR"; do
-+    [ -d "$d" ] || { mkdir -p "$d" 2>/dev/null || :; }
-+  done
-+}
-+
-+export TOOLBOX_CONFIG_DIR TOOLBOX_DATA_DIR TOOLBOX_CACHE_DIR
-```
+## 3. The template ignore rule hides nested `config.sh`
 
-This is the complete file addition shown in the saved commit. It was not
-applied because this pass is documentation-only.
+**Status:** fixed in [`3e96df1`](https://github.com/Bissbert/toolbox.sh/commit/3e96df1).
 
-## The template ignore rule hides nested `config.sh`
+**What happened:** `templates/project/.gitignore` and
+`templates/command/gitignore` held unanchored `config` and `config.sh`
+patterns, so `git check-ignore` matched the nested `lib/config.sh` as well as a
+private config file at the project root.
 
-**Location:** `templates/project/.gitignore:8-9` and
-`templates/command/gitignore:8-9` contain unanchored `config` and `config.sh`
-patterns.
+**What changed:** both patterns are anchored as `/config` and `/config.sh` in
+both files.
 
-**What happens:** `git check-ignore -v --no-index
-templates/project/lib/config.sh` matches
-`templates/project/.gitignore:9:config.sh`. If the missing library is created
-without changing the ignore rule, Git treats the nested library as an ignored
-local config file.
+**Check:** `git check-ignore -v --no-index templates/project/lib/config.sh`
+exits `1` (not ignored).
 
-**Reproduce:**
+## 4. GNU `find -printf` breaks discovery on macOS
 
-```sh
-git check-ignore -v --no-index templates/project/lib/config.sh
-```
+**Status:** fixed in [`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41).
 
-This returned the match shown above. The proposed fix from the dropped commit
-anchors both patterns in both files to the project root:
+**What happened:** both dispatchers and both copies of `tools/new` listed
+commands with `find -printf`. BSD `find` on macOS rejects it, the error was
+redirected, and `help` printed an empty `Commands:` section.
 
-```diff
-diff --git a/templates/command/gitignore b/templates/command/gitignore
-@@
--config
--config.sh
-+/config
-+/config.sh
-diff --git a/templates/project/.gitignore b/templates/project/.gitignore
-@@
--config
--config.sh
-+/config
-+/config.sh
-```
+**What changed:** the listing uses shell globs with executable and directory
+tests and a locale-stable sort. Hidden entries and `__main` are still skipped.
 
-## GNU `find -printf` breaks discovery on macOS
+**Check:** in the Linux container `help` lists `completion`, `generate`,
+`hello`, `new` and `self-update`. GNU `find` accepts `-printf`, so the Linux run
+shows the new listing works but does not reproduce the macOS failure.
 
-**Location:** `bin/toolbox:68`, `templates/project/bin/toolbox:68`,
-`tools/new:115` and `templates/project/tools/new:115`.
+## 5. The dispatcher drops positional arguments
 
-**What happens:** the shallow command listing uses GNU `find -printf`. The
-macOS `find` rejects that expression, its error is redirected, and the command
-list is empty. The same expression is used while preparing group metadata in
-`tools/new`.
+**Status:** fixed in [`c0ba03d`](https://github.com/Bissbert/toolbox.sh/commit/c0ba03d).
 
-**Reproduce:** copy the repository to a temporary directory, add executable
-bits only in that copy, and run `/bin/sh bin/toolbox help` on macOS. The help
-command exits `0` and prints an empty `Commands:` section. This was run during
-the pass. The following source-level change is the proposed shell-glob fix
-from the saved patch:
+**What happened:** while working out the command path, the dispatcher shifted
+every non-option token and then passed none of them to the script.
+`toolbox hello Alice` greeted `$USER` instead of `Alice`, and
+`toolbox new report weekly` reached `tools/new` without its path.
 
-```diff
-diff --git a/bin/toolbox b/bin/toolbox
-@@
--  local dir=$1
--  find "$dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
--    LC_ALL=C sort |
--    while IFS= read -r name; do
-+  local dir=$1 entry name
-+  for entry in "$dir"/*; do
-+    name=${entry##*/}
-     case "$name" in
-       __main|.*) continue ;;
-     esac
--      printf '%s\n' "$name"
--    done
-+    if [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; then
-+      printf '%s\n' "$name"
-+    fi
-+  done | LC_ALL=C sort
-```
+**What changed:** a token joins the command path only when `resolve_command`
+consumes it. The rest are passed to the script.
 
-The same replacement would be made in the generated dispatcher. The saved
-patch also replaces the group-child listing in both copies of `tools/new`.
+**Check:** `USER=nobody ./bin/toolbox hello Alice` prints
+`toolbox: Hello, Alice!`.
 
-## The dispatcher drops positional arguments
+## 6. Nested generated commands source the wrong root
 
-**Location:** `bin/toolbox:193-203` and
-`templates/project/bin/toolbox:193-203`.
+**Status:** fixed in [`ed519f9`](https://github.com/Bissbert/toolbox.sh/commit/ed519f9).
 
-**What happens:** while trying to distinguish a nested command path from
-arguments, the dispatcher shifts every non-option token. It then resets the
-remaining positional parameters before executing the resolved script. A leaf
-receives no positional argument, and `new report weekly` cannot reach
-`tools/new` with its path.
-
-**Reproduce:** in a temporary copy with runtime executable bits, run:
-
-```sh
-/bin/sh bin/toolbox hello Alice
-```
-
-The observed result was `toolbox: Hello, docs-pass!` with `USER=docs-pass`,
-not a greeting for `Alice`. The proposed fix is to keep a candidate command
-path only when `resolve_command` reports that it consumed every candidate
-segment, leaving the remaining parameters for the leaf:
-
-```diff
-diff --git a/bin/toolbox b/bin/toolbox
-@@
- cmd_parts=$cmd
--consumed_guess=1
-+cmd_count=1
-
--set -- "$@"
- while [ "$#" -gt 0 ]; do
-@@
-     -*) break ;;
-     *)
--      cmd_parts="$cmd_parts $1"
--      consumed_guess=$((consumed_guess + 1))
--      shift
--      continue
-+      candidate="$cmd_parts $1"
-+      candidate_data=$(resolve_command $candidate 2>/dev/null || printf '')
-+      if [ -n "$candidate_data" ]; then
-+        candidate_rest=${candidate_data#*|}
-+        candidate_consumed=${candidate_rest%%|*}
-+        if [ "$candidate_consumed" -eq $((cmd_count + 1)) ]; then
-+          cmd_parts=$candidate
-+          cmd_count=$((cmd_count + 1))
-+          shift
-+          continue
-+        fi
-+      fi
-+      break
-       ;;
-```
-
-The same block would be made in the generated dispatcher.
-
-## Nested generated commands source the wrong root
-
-**Location:** `templates/command/leaf:16`, `templates/command/group:16`,
-`tools/new:16` and `templates/project/tools/new:16`.
-
-**What happens:** `_root=${_dir%/tools}` works for a file directly under
-`tools/`, but a nested file has an immediate directory such as
-`<project>/tools/report`. Its suffix no longer ends in `/tools`, so `_root`
-remains inside the command tree. The script then tries to source
+**What happened:** the command templates computed the project root with
+`${_dir%/tools}`. For `tools/report/daily` that left the root at
+`tools/report`, and the script failed to source
 `tools/report/lib/common.sh`.
 
-**Reproduce:** after supplying `lib/config.sh` only in a scratch generated
-project so the generator can continue, create `report/daily` and invoke the
-nested script. The observed error was:
+**What changed:** the leaf and group templates and both copies of `tools/new`
+cut the path at the `/tools/` boundary.
 
-```text
-<scratch>/depot/tools/report/daily: 17: .: cannot open <scratch>/depot/tools/report/lib/common.sh: No such file
-```
+**Check:** in the generated project, `./bin/depot report daily --help` prints
+its usage and `./bin/depot report daily` runs its stub, both with exit `0`.
 
-The generator's missing config defect was separately verified; the scratch
-setup for this probe supplied that file only to isolate the nested-root path.
-The proposed fix is:
+## 7. `tools/new` has a macOS parse error in its command substitution
 
-```diff
-diff --git a/templates/command/leaf b/templates/command/leaf
-@@
--_root=${_dir%/tools}
-+_root=${_this%/tools/*}
-diff --git a/templates/command/group b/templates/command/group
-@@
--_root=${_dir%/tools}
-+_root=${_this%/tools/*}
-```
+**Status:** fixed in [`c58633c`](https://github.com/Bissbert/toolbox.sh/commit/c58633c).
 
-The saved patch applies the same root-expression change to both copies of
-`tools/new`. Those files normally run directly under `tools/`, so the failure
-is exposed most clearly by the generated leaf and group templates; the two
-additional edits were included for consistency with the shared path rule.
+**What happened:** a `case` branch ending in `continue ;;` sat inside a command
+substitution. The macOS `sh` rejected it (`syntax error near unexpected token
+';;'`), so `tools/new --group` exited `2`.
 
-## `tools/new` has a macOS parse error in its command substitution
+**What changed:** the child filter is an `if` inside the substitution.
 
-**Location:** `tools/new:115-122` and
-`templates/project/tools/new:115-122`.
+**Check:** `./bin/depot new --group demo` creates `demo/__main`, and `help`
+then lists `demo`. As with entry 4, the Linux run does not reproduce the
+macOS-only parse error.
 
-**What happens:** the `case` branch containing `continue ;;` is inside a
-command substitution. The macOS shell rejects the syntax before the group
-template can be filled.
+## 8. `_list_all_command_paths` uses a non-POSIX substitution
 
-**Reproduce:** in a temporary copy with runtime executable bits, run:
+**Status:** fixed in [`fc4dabd`](https://github.com/Bissbert/toolbox.sh/commit/fc4dabd).
 
-```sh
-TOOLS_DIR="$PWD/tools" TEMPLATE_DIR="$PWD/templates" \
-  TOOLBOX_NAME=toolbox /bin/sh tools/new --group demo
-```
+**What happened:** `${rel//\// }` is Bash syntax. Under `dash`,
+`sh bin/toolbox __all_commands` printed `bin/toolbox: 112: Bad substitution`
+and still exited `0`, so completion got no command list.
 
-The observed status was `2`, with an error at line `119` near `;;`. The saved
-patch replaced the GNU listing and the nested `case` with a shell conditional:
+**What changed:** both dispatchers convert the path with `tr '/' ' '`.
 
-```diff
-diff --git a/tools/new b/tools/new
-@@
--  child_list=$(find "$target_dir" -mindepth 1 -maxdepth 1 \( -type f -perm -u+x -o -type d \) -printf '%f\n' 2>/dev/null |
--    LC_ALL=C sort |
--    while IFS= read -r name; do
--      case "$name" in
--        __main|.*) continue ;;
--      esac
--      printf '%s\n' "$name"
--    done)
-+  child_list=$(
-+    for entry in "$target_dir"/*; do
-+      name=${entry##*/}
-+      if [ "$name" != "__main" ] && [ "${name#.*}" = "$name" ] &&
-+         { [ -d "$entry" ] || { [ -f "$entry" ] && [ -x "$entry" ]; }; }; then
-+        printf '%s\n' "$name"
-+      fi
-+    done | LC_ALL=C sort
-+  )
-```
+**Check:** under `dash`, `sh bin/toolbox __all_commands` prints the five
+commands and exits `0`.
 
-The same change would be made in the generated copy.
+## 9. Generated help keeps variable references literal
 
-## `_list_all_command_paths` uses a non-POSIX substitution
+**Status:** fixed in [`6715cf4`](https://github.com/Bissbert/toolbox.sh/commit/6715cf4).
 
-**Location:** `bin/toolbox:112-119` and
-`templates/project/bin/toolbox:112-119`.
+**What happened:** the generated dispatcher's help heredoc was quoted, so help
+printed `${TOOLBOX_NAME} ${TOOLBOX_VERSION}` and `$(_usage_commands)`
+literally.
 
-**What happens:** `${rel//\// }` is a Bash-style global replacement. Under
-`dash`, `__all_commands` prints `Bad substitution` and still returns status
-`0`; completion consequently cannot obtain a useful command list.
+**What changed:** the heredoc delimiter is unquoted.
 
-**Reproduce:** in the Debian `python:3.12-slim-bookworm` container, with
-runtime permissions prepared in the container copy, run:
+**Check:** `./bin/depot help` starts with `depot 0.1.0` and lists the
+generated commands.
+
+## 10. Generated command examples keep `${TOOLBOX_NAME}` literal
+
+**Status:** fixed in [`272de6b`](https://github.com/Bissbert/toolbox.sh/commit/272de6b).
+
+**What happened:** the leaf and group templates used a quoted examples
+heredoc, so `Examples:` printed `${TOOLBOX_NAME}` instead of the project
+name.
+
+**What changed:** the examples heredoc in both templates is unquoted.
+
+**Check:** `./bin/depot report daily --help` ends with
+`Examples:` / `depot report daily`.
+
+## 11. A generated project's own tests target the template
+
+**Status:** open. Found in the Linux run.
+
+**Files:** `templates/project/tests/cli.t`, `templates/project/tests/generate.t`,
+`templates/project/tests/harness.sh:13`, `tools/generate:99`
+
+**What happens:** the generator copies `templates/project/tests/` into the new
+project, renames `bin/toolbox` to `bin/<name>`, and deletes `tools/hello` and
+`tests/hello.t`. The two remaining test files still run `$_ROOT/bin/toolbox`
+(the harness default), and expect `hello` and `generate` commands, which a
+generated project does not have. `tests/run` in a fresh project therefore fails
+every assertion.
+
+**Reproduce:** generate `depot` as in the README, then:
 
 ```sh
-sh bin/toolbox __all_commands
+cd depot && sh tests/run
 ```
-
-The observed output was `bin/toolbox: 112: Bad substitution` and status `0`.
-This was not part of the saved patch, so the following is a proposed fix rather
-than a previously attempted one:
-
-```diff
-diff --git a/bin/toolbox b/bin/toolbox
-@@
--        printf '%s\n' "${rel//\// }"
-+        printf '%s\n' "$rel" | tr '/' ' '
-@@
--    printf '%s\n' "${dir//\// }"
-+    printf '%s\n' "$dir" | tr '/' ' '
-```
-
-The generated dispatcher would receive the same change.
-
-## Generated help keeps variable references literal
-
-**Location:** `templates/project/bin/toolbox:46`.
-
-**What happens:** the generated dispatcher's help heredoc is quoted as
-`<<'__TOOLBOX_HELP__'`, so `${TOOLBOX_NAME}`, `${TOOLBOX_VERSION}` and
-`$(_usage_commands)` are printed literally.
-
-**Reproduce:** copy `templates/project` to a temporary project, provide
-`lib/config.sh` only in that temporary copy, rename its dispatcher and invoke
-`help`. The observed output began:
 
 ```text
-${TOOLBOX_NAME} ${TOOLBOX_VERSION}
-Usage: ${TOOLBOX_NAME} [global-options] <command> [args]
-Commands:
-$(_usage_commands)
+not ok 1 - help shows commands header
+  ---
+    pattern: Commands:
+    got:     sh: 0: cannot open <scratch>/depot/bin/toolbox: No such file
 ```
 
-This isolation run verifies the heredoc behavior; the current generator's
-missing-library failure is a separate earlier stop. The proposed one-character
-source change is:
+The run ends with `exit=1 ok=0 not_ok=14`.
 
-```diff
-diff --git a/templates/project/bin/toolbox b/templates/project/bin/toolbox
-@@
--  cat <<'__TOOLBOX_HELP__'
-+  cat <<__TOOLBOX_HELP__
-```
-
-## Generated command examples keep `${TOOLBOX_NAME}` literal
-
-**Location:** `templates/command/leaf:27` and `templates/command/group:27`.
-
-**What happens:** the generated command metadata uses a quoted examples
-heredoc. The command's usage expands correctly, but its `Examples:` section
-prints `${TOOLBOX_NAME}` literally.
-
-**Reproduce:** in a temporary generated project with the missing config file
-supplied only for the probe, run `tools/new weekly` and then
-`tools/weekly --help`. The observed example was:
-
-```text
-Examples:
-  ${TOOLBOX_NAME} weekly
-```
-
-The proposed change is:
-
-```diff
-diff --git a/templates/command/leaf b/templates/command/leaf
-@@
--CMD_EXAMPLES=$(cat <<'__CMD_EXAMPLES__'
-+CMD_EXAMPLES=$(cat <<__CMD_EXAMPLES__
-diff --git a/templates/command/group b/templates/command/group
-@@
--CMD_EXAMPLES=$(cat <<'__CMD_EXAMPLES__'
-+CMD_EXAMPLES=$(cat <<__CMD_EXAMPLES__
-```
-
-## Scope note
-
-The documentation pass that produced this file changed documentation, added the
-measurement script under `devtools/`, and left all tracked source behavior and
-file modes untouched. The fixes were applied separately, in the commits listed
-at the top of this file.
+**Possible fix:** have the generator set the harness's default `TOOL` to
+`bin/<name>` and drop or rewrite the `hello` and `generate` assertions, or
+ship a smaller test file that only checks `help` and the manifest's commands.
