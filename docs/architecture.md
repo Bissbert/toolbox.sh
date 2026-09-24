@@ -51,12 +51,11 @@ sequenceDiagram
     T-->>U: output and exit status
 ```
 
-The current implementation has two discovery constraints. It filters command
-files by executable bit, and its shallow listing uses GNU `find -printf`.
-Those are source-level facts, not design recommendations: the reverted
-checkout has no tracked executable files, and the macOS shell cannot evaluate
-the GNU listing expression. The observed failures are catalogued in
-[`BUGS-FOUND.md`](BUGS-FOUND.md).
+Discovery accepts only executable files, and lists them with shell globs and a
+locale-stable sort, skipping hidden entries and `__main`. Earlier versions
+tracked no executable files and used GNU `find -printf`; both are fixed
+([`1709acf`](https://github.com/Bissbert/toolbox.sh/commit/1709acf),
+[`6b1fe41`](https://github.com/Bissbert/toolbox.sh/commit/6b1fe41)).
 
 ## Generated project shape
 

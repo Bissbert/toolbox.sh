@@ -17,16 +17,16 @@ _root=${_this%/tools/*}
 . "$_root/lib/common.sh"; . "$_root/lib/log.sh"; . "$_root/lib/args.sh"; . "$_root/lib/config.sh"
 
 usage() {
-  cat <<'__NEW_HELP__'
-Usage: ${TOOLBOX_NAME} new [--group] <command> [subcommand ...]
+  cat <<__NEW_HELP__
+Usage: ${PROG} new [--group] <command> [subcommand ...]
 
 Scaffold a new command under tools/. Use --group to create a command group
 (__main) that only exposes subcommands.
 
 Examples:
-  ${TOOLBOX_NAME} new hello
-  ${TOOLBOX_NAME} new admin users list
-  ${TOOLBOX_NAME} new --group admin
+  ${PROG} new hello
+  ${PROG} new admin users list
+  ${PROG} new --group admin
 __NEW_HELP__
 }
 

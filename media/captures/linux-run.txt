@@ -1,0 +1,156 @@
+
+=== environment
+Linux 6.5.11-linuxkit aarch64
+/bin/sh -> /usr/bin/dash
+GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
+git version 2.39.5
+Python 3.12.14
+commit 4b13dec
+
+=== python3 devtools/measure.py
+revision	4b13dec
+tracked_files	61
+tracked_executable_files	26
+version_rc	0
+version_output	toolbox 0.1.0
+help_rc	0
+help_commands	5
+direct_version_rc	0
+direct_version_output	toolbox 0.1.0
+tests_rc	0
+tests_ok	55
+tests_not_ok	0
+config_ignore_rc	1
+config_ignore_output	
+scratch_help_rc	0
+scratch_help_commands	5
+scratch_hello_rc	0
+scratch_hello_output	toolbox: Hello, Alice!
+scratch_generate_rc	0
+scratch_generate_output	toolbox: Copying skeleton into <scratch>/depot\ndepot: created status\ntoolbox: Project 'depot' generated at <scratch>/depot
+
+=== 1. tracked modes and direct execution
+     35 100644
+     26 100755
+toolbox 0.1.0
+exit=0
+
+=== 3. ignore rule for templates/project/lib/config.sh
+exit=1 (1 = not ignored)
+
+=== 4. command discovery (help)
+toolbox 0.1.0
+
+Usage: toolbox [global-options] <command> [args]
+
+Global options:
+  -h, --help         Show this help
+  -V, --version      Show version
+  --no-color         Disable colored output
+  --log-level LVL    Set log level (debug,info,warn,error)
+  --config FILE      Use specific config file
+
+Commands:
+  completion
+  generate
+  hello
+  new
+  self-update
+
+  Help:
+  toolbox help [command]
+exit=0
+
+=== 5. positional arguments reach the leaf
+toolbox: Hello, Alice!
+exit=0
+
+=== 8. __all_commands under dash
+completion
+generate
+hello
+new
+self-update
+exit=0
+
+=== 2, 6, 9, 10. generate a project with a nested command
+toolbox: Copying skeleton into <scratch>/depot
+depot: created status
+depot: created report/daily
+depot: created report/__main
+toolbox: Project 'depot' generated at <scratch>/depot
+exit=0
+args.sh
+cmd.sh
+common.sh
+config.sh
+log.sh
+--- bin/depot help
+depot 0.1.0
+
+Usage: depot [global-options] <command> [args]
+
+Global options:
+  -h, --help         Show this help
+  -V, --version      Show version
+  --no-color         Disable colored output
+  --log-level LVL    Set log level (debug,info,warn,error)
+  --config FILE      Use specific config file
+
+Commands:
+  completion
+  new
+  report
+  self-update
+  status
+
+  Help:
+  depot help [command]
+exit=0
+--- bin/depot report daily --help
+Usage: depot report daily [options]
+
+Describe what report daily does
+
+Explain the behaviour of report daily here.
+
+Options:
+  -h, --help
+      Show help information
+
+Examples:
+  depot report daily
+exit=0
+--- bin/depot report daily
+depot: report daily is not implemented yet
+exit=0
+
+=== 7. tools/new --group
+depot: created demo/__main
+exit=0
+Commands:
+  completion
+  demo
+  new
+  report
+  self-update
+  status
+
+
+=== 12. built-in help names the program
+Usage: toolbox new [--group] <command> [subcommand ...]
+  toolbox hello
+  toolbox hello Alice --loud
+Usage: depot new [--group] <command> [subcommand ...]
+
+=== tests/run under dash
+exit=0 ok=55 not_ok=0
+
+=== tests/run under bash
+exit=0 ok=55 not_ok=0
+
+=== generated project: tests/run
+exit=0 ok=10 not_ok=0
+commands.t
+harness.sh
+run

@@ -73,9 +73,7 @@ creates the directory and its `__main` file. The templates expect the command
 to source the libraries relative to the project root and to keep metadata
 close to the implementation.
 
-## Current checkout behavior
-
-The source-level sequence is copy-pasteable:
+## Running it
 
 ```sh
 cat >manifest.json <<'JSON'
@@ -84,14 +82,14 @@ JSON
 /bin/sh bin/toolbox generate --name depot --manifest manifest.json --dest ./depot
 ```
 
-It is not a successful quick start on the current revision. Direct invocation
-was blocked by tracked file modes; after permissions were prepared inside a
-scratch archive, the generator copied its skeleton and then `tools/new` could
-not source `depot/lib/config.sh`. That failure was observed by
-`devtools/measure.py`, and no successful generated-project transcript was
-claimed at the time.
+In the Linux container described in [`measurement.md`](measurement.md) this
+exits `0` and creates `status`, `report/__main` and `report/daily`.
+`./bin/depot help` lists them under the project's own name and version, and
+`./bin/depot report daily` runs.
 
-The missing library, the ignore rule and the related dispatcher defects have
-since been fixed on the default branch, where the same probe runs to
-completion. Their reproductions and diffs are collected in
-[`BUGS-FOUND.md`](BUGS-FOUND.md).
+The generated project's `tests/` holds `harness.sh`, `run` and a
+`commands.t` written from the manifest. The harness targets `bin/<name>`, and
+`commands.t` checks `help`, that `__all_commands` lists every manifest path, and
+that each leaf's `--help` and stub exit `0`. For this manifest `sh tests/run`
+passes 10 of 10 ([#5](https://github.com/Bissbert/toolbox.sh/issues/5)
+records the earlier failure).

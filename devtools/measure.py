@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure the reverted toolbox.sh checkout without changing it.
+"""Measure the toolbox.sh checkout without changing it.
 
 The scratch probe uses a git archive and changes only permissions inside that
 temporary copy. This isolates source behaviour from the checkout's tracked
@@ -44,15 +44,7 @@ def command_lines(help_text):
     return [line.strip() for line in body.splitlines() if line.strip()]
 
 
-def source_base():
-    result = subprocess.run(
-        ["git", "merge-base", "HEAD", "main"],
-        cwd=REPO,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        return result.stdout.strip()
+def revision():
     return subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=REPO,
         capture_output=True, text=True, check=True,
@@ -68,7 +60,7 @@ def scratch_probe(revision):
     with tempfile.TemporaryDirectory(prefix="toolbox-measure-") as name:
         root = Path(name)
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-            tar.extractall(root)
+            tar.extractall(root, filter="tar")
         source = root
         for relative in ("bin", "tools", "tests", "templates/project/bin",
                          "templates/project/tools", "templates/project/tests"):
@@ -106,14 +98,14 @@ def scratch_probe(revision):
 
 
 def main():
-    revision = source_base()
+    rev = revision()
     tree_lines = subprocess.run(
-        ["git", "ls-tree", "-r", revision], cwd=REPO,
+        ["git", "ls-tree", "-r", rev], cwd=REPO,
         capture_output=True, text=True, check=True,
     ).stdout.splitlines()
     modes = [line.split()[0] for line in tree_lines]
-    emit("source_base", subprocess.run(
-        ["git", "rev-parse", "--short", revision], cwd=REPO,
+    emit("revision", subprocess.run(
+        ["git", "rev-parse", "--short", rev], cwd=REPO,
         capture_output=True, text=True, check=True,
     ).stdout.strip())
     emit("tracked_files", len(tree_lines))
@@ -143,7 +135,7 @@ def main():
     emit("config_ignore_rc", code)
     emit("config_ignore_output", text)
 
-    scratch_probe(revision)
+    scratch_probe(rev)
 
 
 if __name__ == "__main__":
